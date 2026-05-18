@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { drizzle } from 'drizzle-orm/mysql2';
 import * as mysql from 'mysql2/promise';
+
 import * as schema from './schema';
 
 export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
@@ -12,11 +13,11 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
       provide: DATABASE_CONNECTION,
       useFactory: async () => {
         const connection = await mysql.createConnection({
-          host: process.env.DB_HOST!,
+          host: process.env.DB_HOST ?? 'localhost',
           port: Number(process.env.DB_PORT ?? '3306'),
-          user: process.env.DB_USERNAME!,
-          password: process.env.DB_PASSWORD!,
-          database: process.env.DB_NAME!,
+          user: process.env.DB_USERNAME ?? 'root',
+          password: process.env.DB_PASSWORD ?? '',
+          database: process.env.DB_NAME ?? '',
         });
         return drizzle(connection, { schema, mode: 'default' });
       },

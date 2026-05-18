@@ -1,4 +1,11 @@
-import { mysqlTable, int, varchar, decimal, boolean, datetime } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  int,
+  varchar,
+  decimal,
+  boolean,
+  datetime,
+} from 'drizzle-orm/mysql-core';
 
 export const services = mysqlTable('services', {
   id: int('id').primaryKey().autoincrement(),

@@ -1,11 +1,23 @@
-import { mysqlTable, int, varchar, decimal, boolean, datetime, date } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  int,
+  varchar,
+  decimal,
+  datetime,
+  date,
+} from 'drizzle-orm/mysql-core';
+
 import { categories } from './categories.schema';
 import { measurementUnits } from './measurement-units.schema';
 
 export const supplies = mysqlTable('supplies', {
   id: int('id').primaryKey().autoincrement(),
-  id_measurement: int('id_measurement').notNull().references(() => measurementUnits.id),
-  id_category: int('id_category').notNull().references(() => categories.id),
+  id_measurement: int('id_measurement')
+    .notNull()
+    .references(() => measurementUnits.id),
+  id_category: int('id_category')
+    .notNull()
+    .references(() => categories.id),
   name: varchar('name', { length: 255 }).notNull(),
   price: decimal('price', { precision: 10, scale: 2 }).notNull(),
   expiring_date: date('expiring_date'),

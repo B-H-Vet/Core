@@ -1,6 +1,8 @@
 import { mysqlTable, int, primaryKey } from 'drizzle-orm/mysql-core';
-import { vets } from './vets.schema';
+
 import { specialties } from '../specialties/specialties.schema';
+
+import { vets } from './vets.schema';
 
 export const vetSpecialties = mysqlTable(
   'vet_specialties',

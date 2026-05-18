@@ -1,4 +1,4 @@
-import { mysqlTable, int, varchar, datetime, boolean } from 'drizzle-orm/mysql-core';
+import { mysqlTable, int, varchar, datetime } from 'drizzle-orm/mysql-core';
 
 export const users = mysqlTable('users', {
   id: int('id').primaryKey().autoincrement(),

@@ -1,9 +1,18 @@
-import { mysqlTable, int, varchar, boolean, datetime } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  int,
+  varchar,
+  boolean,
+  datetime,
+} from 'drizzle-orm/mysql-core';
+
 import { users } from '../auth/users.schema';
 
 export const clients = mysqlTable('clients', {
   id: int('id').primaryKey().autoincrement(),
-  user_id: int('user_id').notNull().references(() => users.id),
+  user_id: int('user_id')
+    .notNull()
+    .references(() => users.id),
   phone: varchar('phone', { length: 20 }).notNull(),
   address: varchar('address', { length: 255 }),
   is_active: boolean('is_active').notNull().default(true),

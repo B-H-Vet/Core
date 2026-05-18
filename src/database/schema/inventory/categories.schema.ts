@@ -1,4 +1,10 @@
-import { mysqlTable, int, varchar, boolean, datetime } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  int,
+  varchar,
+  boolean,
+  datetime,
+} from 'drizzle-orm/mysql-core';
 
 export const categories = mysqlTable('categories', {
   id: int('id').primaryKey().autoincrement(),

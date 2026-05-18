@@ -1,8 +1,22 @@
-import { mysqlTable, int, varchar, boolean, mysqlEnum, datetime } from 'drizzle-orm/mysql-core';
+import {
+  mysqlTable,
+  int,
+  varchar,
+  boolean,
+  mysqlEnum,
+  datetime,
+} from 'drizzle-orm/mysql-core';
 
 export const roles = mysqlTable('roles', {
   id: int('id').primaryKey().autoincrement(),
-  name: mysqlEnum('name', ['CLIENTE', 'RECEPCIONISTA', 'VETERINARIO', 'ADMINISTRADOR']).notNull().unique(),
+  name: mysqlEnum('name', [
+    'CLIENTE',
+    'RECEPCIONISTA',
+    'VETERINARIO',
+    'ADMINISTRADOR',
+  ])
+    .notNull()
+    .unique(),
   description: varchar('description', { length: 255 }),
   requires_approval: boolean('requires_approval').notNull().default(false),
   is_active: boolean('is_active').notNull().default(true),
