@@ -7,13 +7,22 @@ import {
   datetime,
 } from 'drizzle-orm/mysql-core';
 
+export const ROL_NOMBRES = {
+  CLIENTE: 'CLIENTE',
+  RECEPCIONISTA: 'RECEPCIONISTA',
+  VETERINARIO: 'VETERINARIO',
+  ADMINISTRADOR: 'ADMINISTRADOR',
+} as const;
+
+export type RolNombre = (typeof ROL_NOMBRES)[keyof typeof ROL_NOMBRES];
+
 export const roles = mysqlTable('roles', {
   id: int('id').primaryKey().autoincrement(),
   name: mysqlEnum('name', [
-    'CLIENTE',
-    'RECEPCIONISTA',
-    'VETERINARIO',
-    'ADMINISTRADOR',
+    ROL_NOMBRES.CLIENTE,
+    ROL_NOMBRES.RECEPCIONISTA,
+    ROL_NOMBRES.VETERINARIO,
+    ROL_NOMBRES.ADMINISTRADOR,
   ])
     .notNull()
     .unique(),
@@ -27,10 +36,3 @@ export const roles = mysqlTable('roles', {
 
 export type Role = typeof roles.$inferSelect;
 export type NewRole = typeof roles.$inferInsert;
-
-export enum RolNombre {
-  CLIENTE = 'CLIENTE',
-  RECEPCIONISTA = 'RECEPCIONISTA',
-  VETERINARIO = 'VETERINARIO',
-  ADMINISTRADOR = 'ADMINISTRADOR',
-}
