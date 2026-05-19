@@ -1,8 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull } from 'drizzle-orm';
 
+import type { Database } from '../../../database/database.module';
 import { DATABASE_CONNECTION } from '../../../database/database.module';
-import { users, NewUser } from '../../../database/schema/auth/users.schema';
+import {
+  users,
+  type NewUser,
+  User,
+} from '../../../database/schema/auth/users.schema';
 
 import { IUserRepository } from './user.repository.interface';
 
@@ -10,16 +15,16 @@ import { IUserRepository } from './user.repository.interface';
 export class UserRepository extends IUserRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly db: any,
+    private readonly db: Database,
   ) {
     super();
   }
 
-  async findAll(): Promise<any[]> {
-    return this.db.select().from(users).where(isNull(users.deleted_at));
+  async findAll(): Promise<User[]> {
+    return await this.db.select().from(users).where(isNull(users.deleted_at));
   }
 
-  async findById(id: number): Promise<any | null> {
+  async findById(id: number): Promise<User | null> {
     const result = await this.db
       .select()
       .from(users)
@@ -28,7 +33,7 @@ export class UserRepository extends IUserRepository {
     return result[0] ?? null;
   }
 
-  async findByEmail(email: string): Promise<any | null> {
+  async findByEmail(email: string): Promise<User | null> {
     const result = await this.db
       .select()
       .from(users)
@@ -37,12 +42,12 @@ export class UserRepository extends IUserRepository {
     return result[0] ?? null;
   }
 
-  async create(user: NewUser): Promise<any> {
+  async create(user: NewUser): Promise<User | null> {
     await this.db.insert(users).values(user);
     return this.findByEmail(user.email);
   }
 
-  async update(user: any): Promise<any> {
+  async update(user: User): Promise<User | null> {
     await this.db.update(users).set(user).where(eq(users.id, user.id));
     return this.findById(user.id);
   }

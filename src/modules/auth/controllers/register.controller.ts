@@ -1,7 +1,7 @@
 import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import { Roles } from '../decorators/roles.decorator';
 import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
@@ -32,7 +32,7 @@ export class RegisterController {
 
   @Post('receptionist')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RolNombre.ADMINISTRADOR)
+  @Roles(ROL_NOMBRES.ADMINISTRADOR)
   async registerReceptionist(
     @Body() dto: RegisterReceptionistDto,
     @Res({ passthrough: true }) res: Response,

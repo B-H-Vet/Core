@@ -1,8 +1,10 @@
 import { Module, Global } from '@nestjs/common';
-import { drizzle } from 'drizzle-orm/mysql2';
+import { drizzle, type MySql2Database } from 'drizzle-orm/mysql2';
 import * as mysql from 'mysql2/promise';
 
 import * as schema from './schema';
+
+export type Database = MySql2Database<typeof schema>;
 
 export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
 
@@ -11,7 +13,7 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
   providers: [
     {
       provide: DATABASE_CONNECTION,
-      useFactory: async () => {
+      useFactory: async (): Promise<Database> => {
         const connection = await mysql.createConnection({
           host: process.env.DB_HOST ?? 'localhost',
           port: Number(process.env.DB_PORT ?? '3306'),

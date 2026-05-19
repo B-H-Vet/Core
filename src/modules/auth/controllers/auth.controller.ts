@@ -1,9 +1,14 @@
 import { Body, Controller, Post, Res, Req } from '@nestjs/common';
-import type { Response, Request } from 'express';
+import type { Response } from 'express';
 
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import { LoginRequestDto } from '../dto/login-request.dto';
-import { VerifyCodeRequestDto } from '../dto/verify-code-request.dto';
+import type { VerifyCodeRequestDto } from '../dto/verify-code-request.dto';
 import { AuthService } from '../services/auth.service';
+
+interface RequestWithCookies {
+  cookies: Record<string, string | undefined>;
+}
 
 @Controller()
 export class AuthController {
@@ -12,7 +17,7 @@ export class AuthController {
   @Post('auth/verify-email')
   async verifyEmail(
     @Body() dto: VerifyCodeRequestDto,
-    @Req() req: Request,
+    @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.verifyEmail(dto, req, res);
@@ -37,7 +42,7 @@ export class AuthController {
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.login(dto, 'CLIENTE', res);
+    return this.authService.login(dto, ROL_NOMBRES.CLIENTE, res);
   }
 
   @Post('login/vet')
@@ -45,7 +50,7 @@ export class AuthController {
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.login(dto, 'VETERINARIO', res);
+    return this.authService.login(dto, ROL_NOMBRES.VETERINARIO, res);
   }
 
   @Post('login/receptionist')
@@ -53,7 +58,7 @@ export class AuthController {
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.login(dto, 'RECEPCIONISTA', res);
+    return this.authService.login(dto, ROL_NOMBRES.RECEPCIONISTA, res);
   }
 
   @Post('login/admin')
@@ -61,6 +66,6 @@ export class AuthController {
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.login(dto, 'ADMINISTRADOR', res);
+    return this.authService.login(dto, ROL_NOMBRES.ADMINISTRADOR, res);
   }
 }

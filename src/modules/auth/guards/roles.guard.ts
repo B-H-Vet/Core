@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
+import type { RolNombre } from '../../../database/schema/auth/roles.schema';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()

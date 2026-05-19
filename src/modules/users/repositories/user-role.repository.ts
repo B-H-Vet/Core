@@ -1,21 +1,26 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull, and } from 'drizzle-orm';
 
+import type { Database } from '../../../database/database.module';
 import { DATABASE_CONNECTION } from '../../../database/database.module';
 import { roles } from '../../../database/schema/auth/roles.schema';
 import { userRoles } from '../../../database/schema/auth/user-roles.schema';
+import type { UserRole } from '../../../database/schema/auth/user-roles.schema';
 
-import { IUserRoleRepository } from './user-role.repository.interface';
+import type {
+  IUserRoleRepository,
+  UserRoleWithRole,
+} from './user-role.repository.interface';
 
 @Injectable()
 export class UserRoleRepository implements IUserRoleRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly db: any,
+    private readonly db: Database,
   ) {}
 
-  async findByUserId(userId: number): Promise<any[]> {
-    return this.db
+  async findByUserId(userId: number): Promise<UserRoleWithRole[]> {
+    return await this.db
       .select({
         id: userRoles.id,
         user_id: userRoles.user_id,
@@ -39,7 +44,7 @@ export class UserRoleRepository implements IUserRoleRepository {
   async findByUserIdAndRoleId(
     userId: number,
     roleId: number,
-  ): Promise<any | null> {
+  ): Promise<UserRole | null> {
     const result = await this.db
       .select()
       .from(userRoles)
@@ -48,7 +53,10 @@ export class UserRoleRepository implements IUserRoleRepository {
     return result[0] ?? null;
   }
 
-  async create(userRole: any): Promise<any> {
+  async create(userRole: {
+    user: { id: number };
+    role: { id: number };
+  }): Promise<UserRole | null> {
     await this.db.insert(userRoles).values({
       user_id: userRole.user.id,
       role_id: userRole.role.id,
@@ -63,10 +71,12 @@ export class UserRoleRepository implements IUserRoleRepository {
         ),
       )
       .limit(1);
-    return result[0];
+    return result[0] ?? null;
   }
 
-  async update(userRole: any): Promise<any> {
+  async update(
+    userRole: Partial<UserRole> & { id: number },
+  ): Promise<UserRole | null> {
     await this.db
       .update(userRoles)
       .set(userRole)
@@ -76,7 +86,7 @@ export class UserRoleRepository implements IUserRoleRepository {
       .from(userRoles)
       .where(eq(userRoles.id, userRole.id))
       .limit(1);
-    return result[0];
+    return result[0] ?? null;
   }
 
   async revokeByUserId(userId: number, revokedBy: number): Promise<void> {

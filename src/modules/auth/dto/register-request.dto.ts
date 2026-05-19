@@ -1,6 +1,7 @@
-import { IsEmail, IsEnum, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsIn, IsString, MinLength } from 'class-validator';
 
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
+import type { RolNombre } from '../../../database/schema/auth/roles.schema';
 
 export class RegisterRequestDto {
   @IsString({ message: 'El nombre ingresado debe ser texto' })
@@ -15,6 +16,8 @@ export class RegisterRequestDto {
   })
   contrasena!: string;
 
-  @IsEnum(RolNombre, { message: 'El rol ingresado no es válido' })
+  @IsIn(Object.values(ROL_NOMBRES), {
+    message: 'El rol ingresado no es válido',
+  })
   rol!: RolNombre;
 }

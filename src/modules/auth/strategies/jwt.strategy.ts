@@ -10,17 +10,26 @@ export interface JwtPayload {
   rol: string;
 }
 
+interface RequestWithCookies extends Request {
+  cookies: Record<string, string | undefined>;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(configService: ConfigService) {
+    const secret = configService.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => {
+        (request: RequestWithCookies) => {
           return request.cookies.session_token ?? null;
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET')!,
+      secretOrKey: secret,
     });
   }
 

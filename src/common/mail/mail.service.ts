@@ -5,6 +5,7 @@ import * as nodemailer from 'nodemailer';
 export class MailService {
   private transporter = nodemailer.createTransport({
     service: 'gmail',
+    secure: true,
     auth: {
       user: process.env.MAIL_USER,
       pass: process.env.MAIL_PASS,
@@ -17,7 +18,7 @@ export class MailService {
     codigo: string,
   ): Promise<void> {
     await this.transporter.sendMail({
-      from: `"B&H Veterinary" <${process.env.MAIL_USER}>`,
+      from: `"B&H Veterinary" <${process.env.MAIL_USER ?? ''}>`,
       to: correo,
       subject: 'Código de verificación',
       html: `

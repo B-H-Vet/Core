@@ -9,10 +9,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 
 import { MailService } from '../../../common/mail/mail.service';
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
+import type { RolNombre } from '../../../database/schema/auth/roles.schema';
+import type { User } from '../../../database/schema/auth/users.schema';
 import {
   IRoleRepository,
   ROLE_REPOSITORY,
@@ -30,6 +32,10 @@ import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
 import { RegisterVetDto } from '../dto/register-vet.dto';
 import { VerifyCodeRequestDto } from '../dto/verify-code-request.dto';
+
+interface RequestWithCookies {
+  cookies: Record<string, string | undefined>;
+}
 
 @Injectable()
 export class AuthService {
@@ -96,6 +102,14 @@ export class AuthService {
       verification_code_expires_at: expiracion,
     });
 
+    if (!user) {
+      throw new ConflictException('Error al crear el usuario');
+    }
+
+    if (!rol.id) {
+      throw new BadRequestException('El rol no tiene un id válido');
+    }
+
     await this.userRoleRepository.create({ user, role: rol });
 
     await this.mailService.sendVerificationCode(correo, nombreCompleto, codigo);
@@ -110,7 +124,7 @@ export class AuthService {
       dto.nombreCompleto,
       dto.correo,
       dto.contrasena,
-      RolNombre.CLIENTE,
+      ROL_NOMBRES.CLIENTE,
       res,
     );
     return {
@@ -124,7 +138,7 @@ export class AuthService {
       dto.nombreCompleto,
       dto.correo,
       dto.contrasena,
-      RolNombre.VETERINARIO,
+      ROL_NOMBRES.VETERINARIO,
       res,
     );
     return {
@@ -138,7 +152,7 @@ export class AuthService {
       dto.nombreCompleto,
       dto.correo,
       dto.contrasena,
-      RolNombre.RECEPCIONISTA,
+      ROL_NOMBRES.RECEPCIONISTA,
       res,
     );
     return {
@@ -147,10 +161,12 @@ export class AuthService {
     };
   }
 
-  async verifyEmail(dto: VerifyCodeRequestDto, req: Request, res: Response) {
-    const verificationSession = req.cookies.verification_session as
-      | string
-      | undefined;
+  async verifyEmail(
+    dto: VerifyCodeRequestDto,
+    req: RequestWithCookies,
+    res: Response,
+  ) {
+    const verificationSession = req.cookies.verification_session;
     if (!verificationSession) {
       throw new BadRequestException('No hay sesión de verificación activa');
     }
@@ -168,6 +184,10 @@ export class AuthService {
       throw new BadRequestException('No hay código de verificación pendiente');
     }
 
+    if (!user.verification_code_expires_at) {
+      throw new BadRequestException('El código de verificación ha expirado');
+    }
+
     if (new Date(user.verification_code_expires_at) < new Date()) {
       throw new BadRequestException('El código ingresado ha expirado');
     }
@@ -176,25 +196,31 @@ export class AuthService {
       throw new BadRequestException('El código ingresado es incorrecto');
     }
 
-    user.email_verified_at = new Date();
-    user.verification_code = null;
-    user.verification_code_expires_at = null;
-    await this.userRepository.update(user);
+    const updatedUser: User = {
+      ...user,
+      email_verified_at: new Date(),
+      verification_code: null,
+      verification_code_expires_at: null,
+    };
+    await this.userRepository.update(updatedUser);
 
     const userRoles = await this.userRoleRepository.findByUserId(user.id);
     const rolActivo = userRoles.find((ur) => !ur.revoked_at);
 
     if (
-      rolActivo?.role.name === RolNombre.CLIENTE ||
-      rolActivo?.role.name === RolNombre.ADMINISTRADOR
+      rolActivo?.role.name === ROL_NOMBRES.CLIENTE ||
+      rolActivo?.role.name === ROL_NOMBRES.ADMINISTRADOR
     ) {
-      user.approved_at = new Date();
-      await this.userRepository.update(user);
+      const approvedUser: User = {
+        ...user,
+        approved_at: new Date(),
+      };
+      await this.userRepository.update(approvedUser);
     }
 
     res.clearCookie('verification_session');
 
-    if (rolActivo?.role.name === RolNombre.CLIENTE) {
+    if (rolActivo?.role.name === ROL_NOMBRES.CLIENTE) {
       const payload = {
         sub: user.id,
         email: user.email,
@@ -217,22 +243,22 @@ export class AuthService {
       throw new BadRequestException('El correo ya fue verificado');
     }
 
-    const codigo = randomInt(100000, 999999).toString();
-    const expiracion = new Date();
-    expiracion.setMinutes(expiracion.getMinutes() + 15);
+    const newCode = randomInt(100000, 999999).toString();
+    const updatedUser: User = {
+      ...user,
+      verification_code: newCode,
+      verification_code_expires_at: new Date(Date.now() + 15 * 60 * 1000),
+    };
+    await this.userRepository.update(updatedUser);
 
-    user.verification_code = codigo;
-    user.verification_code_expires_at = expiracion;
-    await this.userRepository.update(user);
-
-    await this.mailService.sendVerificationCode(correo, correo, codigo);
+    await this.mailService.sendVerificationCode(correo, correo, newCode);
 
     this.setVerificationCookie(res, user.id);
 
     return { message: 'Código de verificación reenviado correctamente' };
   }
 
-  async login(dto: LoginRequestDto, rolEsperado: string, res: Response) {
+  async login(dto: LoginRequestDto, rolEsperado: RolNombre, res: Response) {
     const user = await this.userRepository.findByEmail(dto.correo);
     if (!user) {
       throw new UnauthorizedException(

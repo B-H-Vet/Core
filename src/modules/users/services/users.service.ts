@@ -5,8 +5,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
-import { User } from '../../../database/schema/auth/users.schema';
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
+import type { User } from '../../../database/schema/auth/users.schema';
 import { UserResponseDto } from '../dto/user-response.dto';
 import { UserMapper } from '../mappers/user.mapper';
 import {
@@ -32,7 +32,7 @@ export class UsersService {
     const users = await this.userRepository.findAll();
     const resultado: UserResponseDto[] = [];
     for (const u of users) {
-      const userRoles = await u.userRoles;
+      const userRoles = await this.userRoleRepository.findByUserId(u.id);
       resultado.push(UserMapper.toDto(u, userRoles));
     }
     return resultado;
@@ -43,7 +43,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('El usuario no fue encontrado');
     }
-    const userRoles = await user.userRoles;
+    const userRoles = await this.userRoleRepository.findByUserId(user.id);
     return UserMapper.toDto(user, userRoles);
   }
 
@@ -59,12 +59,12 @@ export class UsersService {
     const users = await this.userRepository.findAll();
     const resultado: UserResponseDto[] = [];
     for (const u of users) {
-      const userRoles = await u.userRoles;
-      const rolActivo = userRoles?.find((ur: any) => !ur.revoked_at);
+      const userRoles = await this.userRoleRepository.findByUserId(u.id);
+      const rolActivo = userRoles.find((ur) => !ur.revoked_at);
       if (
         u.email_verified_at !== null &&
         u.approved_at === null &&
-        rolActivo?.role?.requires_approval === true
+        rolActivo?.role.requires_approval === true
       ) {
         resultado.push(UserMapper.toDto(u, userRoles));
       }
@@ -88,7 +88,7 @@ export class UsersService {
       throw new BadRequestException('El usuario no tiene un rol asignado');
     }
 
-    if (rolActivo.role.name === RolNombre.CLIENTE) {
+    if (rolActivo.role.name === ROL_NOMBRES.CLIENTE) {
       throw new BadRequestException(
         'Los clientes no requieren aprobación manual',
       );
@@ -98,12 +98,17 @@ export class UsersService {
       throw new BadRequestException('La cuenta ya está aprobada');
     }
 
-    rolActivo.approved_at = new Date();
-    rolActivo.approved_by = adminId;
-    await this.userRoleRepository.update(rolActivo);
+    await this.userRoleRepository.update({
+      id: rolActivo.id,
+      approved_at: new Date(),
+      approved_by: adminId,
+    });
 
-    user.approved_at = new Date();
-    await this.userRepository.update(user);
+    const updatedUser: User = {
+      ...user,
+      approved_at: new Date(),
+    };
+    await this.userRepository.update(updatedUser);
 
     return 'La cuenta ha sido aprobada correctamente';
   }
