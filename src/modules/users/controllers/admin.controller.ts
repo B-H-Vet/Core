@@ -1,8 +1,7 @@
 import {
   Controller,
-  Get,
-  Param,
   Patch,
+  Param,
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
@@ -14,42 +13,24 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { UsersService } from '../services/users.service';
 
-@Controller('users')
+@Controller('admin/user-roles')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class UsersController {
+@Roles(RolNombre.ADMINISTRADOR)
+export class AdminController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('pendientes')
-  @Roles(RolNombre.ADMINISTRADOR)
-  findPendientes() {
-    return this.usersService.findPendientesAprobacion();
-  }
-
-  @Get()
-  @Roles(RolNombre.ADMINISTRADOR)
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  @Roles(RolNombre.ADMINISTRADOR)
-  findById(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findById(id);
-  }
-
-  @Patch(':id/aprobar')
-  @Roles(RolNombre.ADMINISTRADOR)
+  @Patch(':id/approve')
   aprobarCuenta(
     @Param('id', ParseIntPipe) id: number,
+
     @CurrentUser()
     user: { id: number; email: string; rol: string },
   ) {
     return this.usersService.aprobarCuenta(id, user.id);
   }
 
-  @Patch(':id/desactivar')
-  @Roles(RolNombre.ADMINISTRADOR)
-  desactivarCuenta(
+  @Patch(':id/revoke')
+  revocarCuenta(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser()
     user: { id: number; email: string; rol: string },
