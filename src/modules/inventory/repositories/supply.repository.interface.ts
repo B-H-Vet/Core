@@ -1,11 +1,17 @@
+import type {
+  SupplyRow,
+  CreateSupplyData,
+  UpdateSupplyData,
+} from '../types/inventory.types';
+
 export const SUPPLY_REPOSITORY = 'SUPPLY_REPOSITORY';
 
 export abstract class ISupplyRepository {
-  abstract findAll(): Promise<any[]>;
-  abstract findById(id: number): Promise<any | null>;
-  abstract findLowStock(): Promise<any[]>;
-  abstract findExpiringSoon(days: number): Promise<any[]>;
-  abstract create(supply: any): Promise<any>;
-  abstract update(supply: any): Promise<any>;
+  abstract findAll(): Promise<SupplyRow[]>;
+  abstract findById(id: number): Promise<SupplyRow | null>;
+  abstract findLowStock(): Promise<SupplyRow[]>;
+  abstract findExpiringSoon(days: number): Promise<SupplyRow[]>;
+  abstract create(supply: CreateSupplyData): Promise<SupplyRow>;
+  abstract update(supply: UpdateSupplyData): Promise<SupplyRow | null>;
   abstract delete(id: number): Promise<void>;
 }
