@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, isNull } from 'drizzle-orm';
 
-import { DATABASE_CONNECTION } from '../../../database/database.module';
+import {
+  DATABASE_CONNECTION,
+  type Database,
+} from '../../../database/database.module';
 import {
   services,
   type Service,
@@ -17,16 +16,13 @@ import { IServiceRepository } from './service.repository.interface';
 export class ServiceRepository extends IServiceRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly db: any,
+    private readonly db: Database,
   ) {
     super();
   }
 
   async findAll(): Promise<Service[]> {
-    return this.db
-      .select()
-      .from(services)
-      .where(isNull(services.deleted_at)) as Promise<Service[]>;
+    return this.db.select().from(services).where(isNull(services.deleted_at));
   }
 
   async findById(id: number): Promise<Service | null> {
