@@ -2,14 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 
-import { DATABASE_CONNECTION } from '../../../database/database.module';
-import * as schema from '../../../database/schema';
-import { categories } from '../../../database/schema/inventory/categories.schema';
+import { DATABASE_CONNECTION } from '../../../../database/database.module';
+import * as schema from '../../../../database/schema';
+import { categories } from '../../../../database/schema/inventory/categories.schema';
 import {
-  Category,
+  CategoryEntity,
   CreateCategoryData,
   UpdateCategoryData,
-} from '../types/inventory.types';
+} from '../types/category.types';
 
 import { ICategoryRepository } from './category.repository.interface';
 
@@ -22,24 +22,24 @@ export class CategoryRepository extends ICategoryRepository {
     super();
   }
 
-  findAll(): Promise<Category[]> {
+  findAll(): Promise<CategoryEntity[]> {
     return this.db
       .select()
       .from(categories)
       .where(isNull(categories.deleted_at));
   }
 
-  async findById(id: number): Promise<Category | null> {
+  async findById(id: number): Promise<CategoryEntity | null> {
     const result = await this.db
       .select()
       .from(categories)
       .where(eq(categories.id, id))
       .limit(1);
 
-    return (result[0] as Category | undefined) ?? null;
+    return (result[0] as CategoryEntity | undefined) ?? null;
   }
 
-  async create(category: CreateCategoryData): Promise<Category> {
+  async create(category: CreateCategoryData): Promise<CategoryEntity> {
     await this.db.insert(categories).values({
       name: category.name,
     });
@@ -50,10 +50,10 @@ export class CategoryRepository extends ICategoryRepository {
       .where(eq(categories.name, category.name))
       .limit(1);
 
-    return result[0] as Category;
+    return result[0] as CategoryEntity;
   }
 
-  async update(category: UpdateCategoryData): Promise<Category | null> {
+  async update(category: UpdateCategoryData): Promise<CategoryEntity | null> {
     await this.db
       .update(categories)
       .set({

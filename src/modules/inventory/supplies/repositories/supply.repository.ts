@@ -2,14 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull, lte, and, gte } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 
-import { DATABASE_CONNECTION } from '../../../database/database.module';
-import * as schema from '../../../database/schema';
-import { supplies } from '../../../database/schema/inventory/supplies.schema';
-import type {
-  CreateSupplyData,
-  UpdateSupplyData,
-  SupplyRow,
-} from '../types/inventory.types';
+import { DATABASE_CONNECTION } from '../../../../database/database.module';
+import * as schema from '../../../../database/schema';
+import { supplies } from '../../../../database/schema/inventory/supplies.schema';
+import {
+  CreateSupplyInput,
+  UpdateSupplyInput,
+  SupplyEntity,
+} from '../types/supply.types';
 
 import { ISupplyRepository } from './supply.repository.interface';
 
@@ -22,25 +22,25 @@ export class SupplyRepository extends ISupplyRepository {
     super();
   }
 
-  findAll(): Promise<SupplyRow[]> {
+  findAll(): Promise<SupplyEntity[]> {
     return this.db.select().from(supplies).where(isNull(supplies.deleted_at));
   }
 
-  async findById(id: number): Promise<SupplyRow | null> {
+  async findById(id: number): Promise<SupplyEntity | null> {
     const result = await this.db
       .select()
       .from(supplies)
       .where(eq(supplies.id, id))
       .limit(1);
 
-    return (result[0] as SupplyRow | undefined) ?? null;
+    return (result[0] as SupplyEntity | undefined) ?? null;
   }
 
-  findLowStock(): Promise<SupplyRow[]> {
+  findLowStock(): Promise<SupplyEntity[]> {
     return this.db.select().from(supplies).where(isNull(supplies.deleted_at));
   }
 
-  findExpiringSoon(days: number): Promise<SupplyRow[]> {
+  findExpiringSoon(days: number): Promise<SupplyEntity[]> {
     const today = new Date();
     const limit = new Date();
 
@@ -58,15 +58,15 @@ export class SupplyRepository extends ISupplyRepository {
       );
   }
 
-  async create(supply: CreateSupplyData): Promise<SupplyRow> {
+  async create(supply: CreateSupplyInput): Promise<SupplyEntity> {
     await this.db.insert(supplies).values({
       name: supply.name,
       price: String(supply.price),
       expiring_date: supply.expiring_date,
       min_stock: supply.min_stock,
       stock: supply.stock,
-      id_category: supply.category.id,
-      id_measurement: supply.measurement_unit.id,
+      id_category: supply.id_category,
+      id_measurement: supply.id_measurement,
     });
 
     const result = await this.db
@@ -75,20 +75,20 @@ export class SupplyRepository extends ISupplyRepository {
       .where(eq(supplies.name, supply.name))
       .limit(1);
 
-    return result[0] as SupplyRow;
+    return result[0] as SupplyEntity;
   }
 
-  async update(supply: UpdateSupplyData): Promise<SupplyRow | null> {
+  async update(supply: UpdateSupplyInput): Promise<SupplyEntity | null> {
     await this.db
       .update(supplies)
       .set({
         name: supply.name,
-        price: supply.price !== undefined ? String(supply.price) : undefined,
+        price: supply.price,
         expiring_date: supply.expiring_date,
         min_stock: supply.min_stock,
         stock: supply.stock,
-        id_category: supply.category?.id,
-        id_measurement: supply.measurement_unit?.id,
+        id_category: supply.id_category,
+        id_measurement: supply.id_measurement,
         updated_at: new Date(),
       })
       .where(eq(supplies.id, supply.id));
