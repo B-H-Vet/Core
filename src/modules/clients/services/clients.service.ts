@@ -9,11 +9,14 @@ import {
   IUserRepository,
   USER_REPOSITORY,
 } from '../../users/repositories/user.repository.interface';
-import { ClientResponseDto } from '../dto/client-response.dto';
+import { CreateClientResponseDto } from '../dto/create-client-response.dto';
+import { FindAllClientsResponseDto } from '../dto/find-all-clients-response.dto';
+import { FindClientByIdResponseDto } from '../dto/find-client-by-id-response.dto';
+import { FindClientByUserIdResponseDto } from '../dto/find-client-by-user-id-response.dto';
+import { UpdateClientResponseDto } from '../dto/update-client-response.dto';
 import {
   IClientRepository,
   CLIENT_REPOSITORY,
-  ClientWithUser,
 } from '../repositories/client.repository.interface';
 
 @Injectable()
@@ -26,11 +29,32 @@ export class ClientsService {
     private readonly userRepository: IUserRepository,
   ) {}
 
-  private toDto(client: ClientWithUser): ClientResponseDto {
+  async findAll(): Promise<FindAllClientsResponseDto[]> {
+    const clients = await this.clientRepository.findAll();
+    return clients.map((client) => ({
+      id: client.id,
+      phone: client.phone,
+      address: client.address,
+      is_active: client.is_active,
+      created_at: client.created_at,
+      user: {
+        id: client.user.id,
+        email: client.user.email,
+      },
+    }));
+  }
+
+  async findById(id: number): Promise<FindClientByIdResponseDto> {
+    const client = await this.clientRepository.findById(id);
+
+    if (!client) {
+      throw new NotFoundException('El cliente ingresado no fue encontrado');
+    }
+
     return {
       id: client.id,
       phone: client.phone,
-      address: client.address ?? '',
+      address: client.address,
       is_active: client.is_active,
       created_at: client.created_at,
       user: {
@@ -40,36 +64,31 @@ export class ClientsService {
     };
   }
 
-  async findAll(): Promise<ClientResponseDto[]> {
-    const clients = await this.clientRepository.findAll();
-    return clients.map((client) => this.toDto(client));
-  }
-
-  async findById(id: number): Promise<ClientResponseDto> {
-    const client = await this.clientRepository.findById(id);
-
-    if (!client) {
-      throw new NotFoundException('El cliente ingresado no fue encontrado');
-    }
-
-    return this.toDto(client);
-  }
-
-  async findByUserId(userId: number): Promise<ClientResponseDto> {
+  async findByUserId(userId: number): Promise<FindClientByUserIdResponseDto> {
     const client = await this.clientRepository.findByUserId(userId);
 
     if (!client) {
       throw new NotFoundException('El cliente ingresado no fue encontrado');
     }
 
-    return this.toDto(client);
+    return {
+      id: client.id,
+      phone: client.phone,
+      address: client.address,
+      is_active: client.is_active,
+      created_at: client.created_at,
+      user: {
+        id: client.user.id,
+        email: client.user.email,
+      },
+    };
   }
 
   async create(
     userId: number,
     phone: string,
     address?: string,
-  ): Promise<ClientResponseDto> {
+  ): Promise<CreateClientResponseDto> {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
@@ -90,13 +109,23 @@ export class ClientsService {
       ...(address ? { address } : {}),
     });
 
-    return this.toDto(client);
+    return {
+      id: client.id,
+      phone: client.phone,
+      address: client.address,
+      is_active: client.is_active,
+      created_at: client.created_at,
+      user: {
+        id: client.user.id,
+        email: client.user.email,
+      },
+    };
   }
 
   async update(
     id: number,
     dto: { phone?: string; address?: string },
-  ): Promise<ClientResponseDto> {
+  ): Promise<UpdateClientResponseDto> {
     const client = await this.clientRepository.findById(id);
 
     if (!client) {
@@ -109,7 +138,17 @@ export class ClientsService {
       address: dto.address ?? client.address,
     });
 
-    return this.toDto(updatedClient);
+    return {
+      id: updatedClient.id,
+      phone: updatedClient.phone,
+      address: updatedClient.address,
+      is_active: updatedClient.is_active,
+      created_at: updatedClient.created_at,
+      user: {
+        id: updatedClient.user.id,
+        email: updatedClient.user.email,
+      },
+    };
   }
 
   async delete(id: number): Promise<string> {

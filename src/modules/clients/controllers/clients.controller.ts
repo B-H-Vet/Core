@@ -14,7 +14,11 @@ import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { CreateClientResponseDto } from '../dto/create-client-response.dto';
 import { CreateClientDto } from '../dto/create-client.dto';
+import { FindAllClientsResponseDto } from '../dto/find-all-clients-response.dto';
+import { FindClientByIdResponseDto } from '../dto/find-client-by-id-response.dto';
+import { UpdateClientResponseDto } from '../dto/update-client-response.dto';
 import { UpdateClientDto } from '../dto/update-client.dto';
 import { ClientsService } from '../services/clients.service';
 
@@ -25,7 +29,7 @@ export class ClientsController {
 
   @Get()
   @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
-  findAll() {
+  findAll(): Promise<FindAllClientsResponseDto[]> {
     return this.clientsService.findAll();
   }
 
@@ -35,13 +39,15 @@ export class ClientsController {
     ROL_NOMBRES.RECEPCIONISTA,
     ROL_NOMBRES.CLIENTE,
   )
-  findById(@Param('id', ParseIntPipe) id: number) {
+  findById(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<FindClientByIdResponseDto> {
     return this.clientsService.findById(id);
   }
 
   @Post()
   @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
-  create(@Body() dto: CreateClientDto) {
+  create(@Body() dto: CreateClientDto): Promise<CreateClientResponseDto> {
     return this.clientsService.create(dto.userId, dto.phone, dto.address);
   }
 
@@ -51,7 +57,10 @@ export class ClientsController {
     ROL_NOMBRES.RECEPCIONISTA,
     ROL_NOMBRES.CLIENTE,
   )
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateClientDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateClientDto,
+  ): Promise<UpdateClientResponseDto> {
     return this.clientsService.update(id, dto);
   }
 
