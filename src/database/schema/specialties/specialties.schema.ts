@@ -9,6 +9,7 @@ import {
 export const specialties = mysqlTable('specialties', {
   id: int('id').primaryKey().autoincrement(),
   name: varchar('name', { length: 255 }).notNull().unique(),
+  description: varchar('description', { length: 500 }),
   is_active: boolean('is_active').notNull().default(true),
   created_at: datetime('created_at').notNull().default(new Date()),
   updated_at: datetime('updated_at').notNull().default(new Date()),
