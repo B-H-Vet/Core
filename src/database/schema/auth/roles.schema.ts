@@ -13,7 +13,6 @@ export const ROL_NOMBRES = {
   VETERINARIO: 'VETERINARIO',
   ADMINISTRADOR: 'ADMINISTRADOR',
 } as const;
-
 export type RolNombre = (typeof ROL_NOMBRES)[keyof typeof ROL_NOMBRES];
 
 export const roles = mysqlTable('roles', {
