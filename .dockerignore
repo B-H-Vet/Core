@@ -11,3 +11,4 @@ coverage
 pnpm-debug.log
 Dockerfile*
 docker-compose*
+*.tsbuildinfo
