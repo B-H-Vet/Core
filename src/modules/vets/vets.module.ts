@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+
+import { SpecialtiesModule } from '../specialties/specialties.module';
+import { UsersModule } from '../users/users.module';
+
+import { VetsController } from './controllers/vets.controller';
 import { VetRepository } from './repositories/vet.repository';
 import { VET_REPOSITORY } from './repositories/vet.repository.interface';
-import { VetsController } from './controllers/vets.controller';
 import { VetsService } from './services/vets.service';
-import { UsersModule } from '../users/users.module';
-import { SpecialtiesModule } from '../specialties/specialties.module';
 
 @Module({
   imports: [UsersModule, SpecialtiesModule],

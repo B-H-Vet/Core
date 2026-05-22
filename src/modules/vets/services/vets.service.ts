@@ -4,21 +4,23 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  IVetRepository,
-  VET_REPOSITORY,
-} from '../repositories/vet.repository.interface';
-import { CreateVetDto } from '../dto/create-vet.dto';
-import { UpdateVetDto } from '../dto/update-vet.dto';
-import { VetResponseDto } from '../dto/vet-response.dto';
-import {
-  IUserRepository,
-  USER_REPOSITORY,
-} from '../../users/repositories/user.repository.interface';
+
 import {
   ISpecialtyRepository,
   SPECIALTY_REPOSITORY,
 } from '../../specialties/repositories/specialty.repository.interface';
+import {
+  IUserRepository,
+  USER_REPOSITORY,
+} from '../../users/repositories/user.repository.interface';
+import { CreateVetDto } from '../dto/create-vet.dto';
+import { UpdateVetDto } from '../dto/update-vet.dto';
+import { VetResponseDto } from '../dto/vet-response.dto';
+import {
+  IVetRepository,
+  VET_REPOSITORY,
+  VetWithRelations,
+} from '../repositories/vet.repository.interface';
 
 @Injectable()
 export class VetsService {
@@ -33,14 +35,16 @@ export class VetsService {
     private readonly specialtyRepository: ISpecialtyRepository,
   ) {}
 
-  private toDto(vet: any): VetResponseDto {
+  private toDto(vet: VetWithRelations): VetResponseDto {
     return {
       id: vet.id,
       license_number: vet.license_number,
-      specialty: vet.specialty ? {
-        id: vet.specialty.id,
-        name: vet.specialty.name,
-      } : null,
+      specialty: vet.specialty
+        ? {
+            id: vet.specialty.id,
+            name: vet.specialty.name,
+          }
+        : null,
       is_active: vet.is_active,
       created_at: vet.created_at,
       user: {
@@ -71,10 +75,12 @@ export class VetsService {
 
     const vetExistente = await this.vetRepository.findByUserId(userId);
     if (vetExistente) {
-      throw new BadRequestException('Este usuario ya tiene un perfil de veterinario');
+      throw new BadRequestException(
+        'Este usuario ya tiene un perfil de veterinario',
+      );
     }
 
-    let specialty: any = null;
+    let specialty: { id: number; name?: string } | null = null;
     if (dto.specialtyId) {
       specialty = await this.specialtyRepository.findById(dto.specialtyId);
       if (!specialty) {
@@ -93,7 +99,9 @@ export class VetsService {
 
   async update(id: number, dto: UpdateVetDto): Promise<VetResponseDto> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Debes ingresar al menos un campo para actualizar');
+      throw new BadRequestException(
+        'Debes ingresar al menos un campo para actualizar',
+      );
     }
 
     const vet = await this.vetRepository.findById(id);
@@ -101,18 +109,24 @@ export class VetsService {
       throw new NotFoundException('El veterinario no fue encontrado');
     }
 
-    if (dto.license_number) vet.license_number = dto.license_number;
-    if (dto.is_active !== undefined) vet.is_active = dto.is_active;
+    const updateInput = {
+      id: vet.id,
+      license_number: dto.license_number ?? vet.license_number,
+      is_active: dto.is_active ?? vet.is_active,
+      specialty: vet.specialty,
+    };
 
     if (dto.specialtyId) {
-      const specialty = await this.specialtyRepository.findById(dto.specialtyId);
+      const specialty = await this.specialtyRepository.findById(
+        dto.specialtyId,
+      );
       if (!specialty) {
         throw new NotFoundException('La especialidad no fue encontrada');
       }
-      vet.specialty = specialty;
+      updateInput.specialty = specialty;
     }
 
-    const updated = await this.vetRepository.update(vet);
+    const updated = await this.vetRepository.update(updateInput);
     return this.toDto(updated);
   }
 }

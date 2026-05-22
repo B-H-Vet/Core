@@ -9,13 +9,14 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { VetsService } from '../services/vets.service';
-import { CreateVetDto } from '../dto/create-vet.dto';
-import { UpdateVetDto } from '../dto/update-vet.dto';
+
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
+import { CreateVetDto } from '../dto/create-vet.dto';
+import { UpdateVetDto } from '../dto/update-vet.dto';
+import { VetsService } from '../services/vets.service';
 
 @Controller('vets')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,19 +24,19 @@ export class VetsController {
   constructor(private readonly vetsService: VetsService) {}
 
   @Get()
-  @Roles(RolNombre.ADMINISTRADOR, RolNombre.RECEPCIONISTA)
+  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
   findAll() {
     return this.vetsService.findAll();
   }
 
   @Get(':id')
-  @Roles(RolNombre.ADMINISTRADOR, RolNombre.RECEPCIONISTA)
+  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.vetsService.findById(id);
   }
 
   @Post('crear/:userId')
-  @Roles(RolNombre.ADMINISTRADOR)
+  @Roles(ROL_NOMBRES.ADMINISTRADOR)
   create(
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: CreateVetDto,
@@ -43,19 +44,15 @@ export class VetsController {
     return this.vetsService.create(userId, dto);
   }
 
-
   @Delete(':id')
-  @Roles(RolNombre.ADMINISTRADOR)
+  @Roles(ROL_NOMBRES.ADMINISTRADOR)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.vetsService.update(id, { is_active: false });
   }
 
   @Patch(':id')
-  @Roles(RolNombre.ADMINISTRADOR)
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateVetDto,
-  ) {
+  @Roles(ROL_NOMBRES.ADMINISTRADOR)
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVetDto) {
     return this.vetsService.update(id, dto);
   }
 }
