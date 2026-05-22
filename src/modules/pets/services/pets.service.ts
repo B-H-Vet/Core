@@ -4,17 +4,19 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  IPetRepository,
-  PET_REPOSITORY,
-} from '../repositories/pet.repository.interface';
+
 import {
   IClientRepository,
   CLIENT_REPOSITORY,
 } from '../../clients/repositories/client.repository.interface';
 import { CreatePetDto } from '../dto/create-pet.dto';
-import { UpdatePetDto } from '../dto/update-pet.dto';
 import { PetResponseDto } from '../dto/pet-response.dto';
+import { UpdatePetDto } from '../dto/update-pet.dto';
+import {
+  IPetRepository,
+  PET_REPOSITORY,
+  PetRow,
+} from '../repositories/pet.repository.interface';
 
 @Injectable()
 export class PetsService {
@@ -26,7 +28,7 @@ export class PetsService {
     private readonly clientRepository: IClientRepository,
   ) {}
 
-  private toDto(pet: any): PetResponseDto {
+  private toDto(pet: PetRow): PetResponseDto {
     return {
       id: pet.id,
       name: pet.name,
@@ -68,13 +70,13 @@ export class PetsService {
     }
 
     const pet = await this.petRepository.create({
-      client,
+      client: { id: client.id },
       name: dto.name,
       species: dto.species,
-      breed: dto.breed,
-      color: dto.color,
-      birth_date: dto.birth_date,
-      weight: dto.weight,
+      breed: dto.breed ?? null,
+      color: dto.color ?? null,
+      birth_date: dto.birth_date ?? null,
+      weight: dto.weight ?? null,
     });
 
     return this.toDto(pet);
@@ -82,7 +84,9 @@ export class PetsService {
 
   async update(id: number, dto: UpdatePetDto): Promise<PetResponseDto> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException('Debes ingresar al menos un campo para actualizar');
+      throw new BadRequestException(
+        'Debes ingresar al menos un campo para actualizar',
+      );
     }
 
     const pet = await this.petRepository.findById(id);
@@ -90,16 +94,19 @@ export class PetsService {
       throw new NotFoundException('La mascota ingresada no fue encontrada');
     }
 
-    if (dto.name) pet.name = dto.name;
-    if (dto.species) pet.species = dto.species;
-    if (dto.breed) pet.breed = dto.breed;
-    if (dto.color) pet.color = dto.color;
-    if (dto.birth_date) pet.birth_date = dto.birth_date;
-    if (dto.weight !== undefined) pet.weight = dto.weight;
-    if (dto.status) pet.status = dto.status;
+    const updatedPet: PetRow = {
+      ...pet,
+      name: dto.name ?? pet.name,
+      species: dto.species ?? pet.species,
+      breed: dto.breed ?? pet.breed,
+      color: dto.color ?? pet.color,
+      birth_date: dto.birth_date ?? pet.birth_date,
+      weight: dto.weight?.toString() ?? pet.weight,
+      status: dto.status ?? pet.status,
+    };
 
-    const updated = await this.petRepository.update(pet);
-    return this.toDto(updated);
+    const result = await this.petRepository.update(updatedPet);
+    return this.toDto(result);
   }
 
   async delete(id: number): Promise<string> {

@@ -17,7 +17,7 @@ export class CreatePetDto {
 
   @IsDateString()
   @IsOptional()
-  birth_date?: Date;
+  birth_date?: string;
 
   @IsNumber()
   @IsOptional()

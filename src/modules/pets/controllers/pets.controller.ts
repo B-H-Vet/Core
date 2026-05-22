@@ -9,14 +9,14 @@ import {
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
-import { PetsService } from '../services/pets.service';
-import { CreatePetDto } from '../dto/create-pet.dto';
-import { UpdatePetDto } from '../dto/update-pet.dto';
+
+import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
-
+import { CreatePetDto } from '../dto/create-pet.dto';
+import { UpdatePetDto } from '../dto/update-pet.dto';
+import { PetsService } from '../services/pets.service';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -24,7 +24,12 @@ export class PetsController {
   constructor(private readonly petsService: PetsService) {}
 
   @Get(':clientId/pets')
-  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA, ROL_NOMBRES.VETERINARIO, ROL_NOMBRES.CLIENTE)
+  @Roles(
+    ROL_NOMBRES.ADMINISTRADOR,
+    ROL_NOMBRES.RECEPCIONISTA,
+    ROL_NOMBRES.VETERINARIO,
+    ROL_NOMBRES.CLIENTE,
+  )
   findByClientId(@Param('clientId', ParseIntPipe) clientId: number) {
     return this.petsService.findByClientId(clientId);
   }
@@ -39,23 +44,29 @@ export class PetsController {
   }
 
   @Get()
-  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA, ROL_NOMBRES.VETERINARIO)
+  @Roles(
+    ROL_NOMBRES.ADMINISTRADOR,
+    ROL_NOMBRES.RECEPCIONISTA,
+    ROL_NOMBRES.VETERINARIO,
+  )
   findAll() {
     return this.petsService.findAll();
   }
 
   @Get(':id')
-  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA, ROL_NOMBRES.VETERINARIO, ROL_NOMBRES.CLIENTE)
+  @Roles(
+    ROL_NOMBRES.ADMINISTRADOR,
+    ROL_NOMBRES.RECEPCIONISTA,
+    ROL_NOMBRES.VETERINARIO,
+    ROL_NOMBRES.CLIENTE,
+  )
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.petsService.findById(id);
   }
 
   @Patch(':id')
   @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdatePetDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePetDto) {
     return this.petsService.update(id, dto);
   }
 

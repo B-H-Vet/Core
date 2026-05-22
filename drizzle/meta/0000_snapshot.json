@@ -85,17 +85,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "checkConstraint": {}
@@ -169,17 +165,13 @@
       "compositePrimaryKeys": {
         "roles_id": {
           "name": "roles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "roles_name_unique": {
           "name": "roles_name_unique",
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "checkConstraint": {}
@@ -251,12 +243,8 @@
           "name": "user_roles_user_id_users_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -264,12 +252,8 @@
           "name": "user_roles_role_id_roles_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -277,9 +261,7 @@
       "compositePrimaryKeys": {
         "user_roles_id": {
           "name": "user_roles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -354,12 +336,8 @@
           "name": "clients_user_id_users_id_fk",
           "tableFrom": "clients",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -367,9 +345,7 @@
       "compositePrimaryKeys": {
         "clients_id": {
           "name": "clients_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -437,12 +413,8 @@
           "name": "vets_user_id_users_id_fk",
           "tableFrom": "vets",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -450,9 +422,7 @@
       "compositePrimaryKeys": {
         "vets_id": {
           "name": "vets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -519,17 +489,13 @@
       "compositePrimaryKeys": {
         "specialties_id": {
           "name": "specialties_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "specialties_name_unique": {
           "name": "specialties_name_unique",
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "checkConstraint": {}
@@ -631,12 +597,8 @@
           "name": "pets_client_id_clients_id_fk",
           "tableFrom": "pets",
           "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["client_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -644,9 +606,7 @@
       "compositePrimaryKeys": {
         "pets_id": {
           "name": "pets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -720,9 +680,7 @@
       "compositePrimaryKeys": {
         "services_id": {
           "name": "services_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -819,12 +777,8 @@
           "name": "supplies_id_measurement_measurement_units_id_fk",
           "tableFrom": "supplies",
           "tableTo": "measurement_units",
-          "columnsFrom": [
-            "id_measurement"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["id_measurement"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -832,12 +786,8 @@
           "name": "supplies_id_category_categories_id_fk",
           "tableFrom": "supplies",
           "tableTo": "categories",
-          "columnsFrom": [
-            "id_category"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["id_category"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -845,9 +795,7 @@
       "compositePrimaryKeys": {
         "supplies_id": {
           "name": "supplies_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -907,17 +855,13 @@
       "compositePrimaryKeys": {
         "categories_id": {
           "name": "categories_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "categories_name_unique": {
           "name": "categories_name_unique",
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "checkConstraint": {}
@@ -968,17 +912,13 @@
       "compositePrimaryKeys": {
         "measurement_units_id": {
           "name": "measurement_units_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "measurement_units_unit_unique": {
           "name": "measurement_units_unit_unique",
-          "columns": [
-            "unit"
-          ]
+          "columns": ["unit"]
         }
       },
       "checkConstraint": {}
@@ -1007,12 +947,8 @@
           "name": "vet_specialties_vet_id_vets_id_fk",
           "tableFrom": "vet_specialties",
           "tableTo": "vets",
-          "columnsFrom": [
-            "vet_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["vet_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1020,12 +956,8 @@
           "name": "vet_specialties_specialty_id_specialties_id_fk",
           "tableFrom": "vet_specialties",
           "tableTo": "specialties",
-          "columnsFrom": [
-            "specialty_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["specialty_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1033,10 +965,7 @@
       "compositePrimaryKeys": {
         "vet_specialties_vet_id_specialty_id_pk": {
           "name": "vet_specialties_vet_id_specialty_id_pk",
-          "columns": [
-            "vet_id",
-            "specialty_id"
-          ]
+          "columns": ["vet_id", "specialty_id"]
         }
       },
       "uniqueConstraints": {},

@@ -11,7 +11,13 @@ import boundaries from 'eslint-plugin-boundaries';
 
 export default tseslint.config(
   {
-    ignores: ['eslint.config.mjs', 'dist', 'node_modules', 'coverage', 'Core/**'],
+    ignores: [
+      'eslint.config.mjs',
+      'dist',
+      'node_modules',
+      'coverage',
+      'Core/**',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
