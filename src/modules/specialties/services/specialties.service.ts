@@ -6,9 +6,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { type Specialty } from '../../../database/schema/specialties/specialties.schema';
+import { CreateSpecialtyResponseDto } from '../dto/create-specialty-response.dto';
 import { CreateSpecialtyDto } from '../dto/create-specialty.dto';
-import { SpecialtyResponseDto } from '../dto/specialty-response.dto';
+import { DeleteSpecialtyResponseDto } from '../dto/delete-specialty-response.dto';
+import { DesactivarSpecialtyResponseDto } from '../dto/desactivar-specialty-response.dto';
+import { FindAllSpecialtiesResponseDto } from '../dto/find-all-specialties-response.dto';
+import { FindSpecialtyByIdResponseDto } from '../dto/find-specialty-by-id-response.dto';
+import { UpdateSpecialtyResponseDto } from '../dto/update-specialty-response.dto';
 import { UpdateSpecialtyDto } from '../dto/update-specialty.dto';
 import {
   ISpecialtyRepository,
@@ -22,7 +26,24 @@ export class SpecialtiesService {
     private readonly specialtyRepository: ISpecialtyRepository,
   ) {}
 
-  private toDto(specialty: Specialty): SpecialtyResponseDto {
+  async findAll(): Promise<FindAllSpecialtiesResponseDto[]> {
+    const all = await this.specialtyRepository.findAll();
+    return all.map((specialty) => ({
+      id: specialty.id,
+      name: specialty.name,
+      description: specialty.description ?? null,
+      is_active: specialty.is_active,
+      created_at: specialty.created_at,
+    }));
+  }
+
+  async findById(id: number): Promise<FindSpecialtyByIdResponseDto> {
+    const specialty = await this.specialtyRepository.findById(id);
+    if (!specialty) {
+      throw new NotFoundException(
+        'La especialidad ingresada no fue encontrada',
+      );
+    }
     return {
       id: specialty.id,
       name: specialty.name,
@@ -32,28 +53,19 @@ export class SpecialtiesService {
     };
   }
 
-  async findAll(): Promise<SpecialtyResponseDto[]> {
-    const all = await this.specialtyRepository.findAll();
-    return all.map((s) => this.toDto(s));
-  }
-
-  async findById(id: number): Promise<SpecialtyResponseDto> {
-    const specialty = await this.specialtyRepository.findById(id);
-    if (!specialty) {
-      throw new NotFoundException(
-        'La especialidad ingresada no fue encontrada',
-      );
-    }
-    return this.toDto(specialty);
-  }
-
-  async create(dto: CreateSpecialtyDto): Promise<SpecialtyResponseDto> {
+  async create(dto: CreateSpecialtyDto): Promise<CreateSpecialtyResponseDto> {
     try {
       const specialty = await this.specialtyRepository.create({
         name: dto.name,
         description: dto.description ?? null,
       });
-      return this.toDto(specialty);
+      return {
+        id: specialty.id,
+        name: specialty.name,
+        description: specialty.description ?? null,
+        is_active: specialty.is_active,
+        created_at: specialty.created_at,
+      };
     } catch (e: unknown) {
       if (
         typeof e === 'object' &&
@@ -70,7 +82,7 @@ export class SpecialtiesService {
   async update(
     id: number,
     dto: UpdateSpecialtyDto,
-  ): Promise<SpecialtyResponseDto> {
+  ): Promise<UpdateSpecialtyResponseDto> {
     if (Object.keys(dto).length === 0) {
       throw new BadRequestException(
         'Debes ingresar al menos un campo para actualizar',
@@ -89,7 +101,13 @@ export class SpecialtiesService {
         description: dto.description ?? specialty.description,
         is_active: dto.is_active ?? specialty.is_active,
       });
-      return this.toDto(updated);
+      return {
+        id: updated.id,
+        name: updated.name,
+        description: updated.description ?? null,
+        is_active: updated.is_active,
+        created_at: updated.created_at,
+      };
     } catch (e: unknown) {
       if (
         typeof e === 'object' &&
@@ -103,7 +121,7 @@ export class SpecialtiesService {
     }
   }
 
-  async desactivar(id: number): Promise<SpecialtyResponseDto> {
+  async desactivar(id: number): Promise<DesactivarSpecialtyResponseDto> {
     const specialty = await this.specialtyRepository.findById(id);
     if (!specialty) {
       throw new NotFoundException(
@@ -117,10 +135,16 @@ export class SpecialtiesService {
       id,
       is_active: false,
     });
-    return this.toDto(updated);
+    return {
+      id: updated.id,
+      name: updated.name,
+      description: updated.description ?? null,
+      is_active: updated.is_active,
+      created_at: updated.created_at,
+    };
   }
 
-  async delete(id: number): Promise<SpecialtyResponseDto> {
+  async delete(id: number): Promise<DeleteSpecialtyResponseDto> {
     const specialty = await this.specialtyRepository.findById(id);
     if (!specialty) {
       throw new NotFoundException(
@@ -128,6 +152,12 @@ export class SpecialtiesService {
       );
     }
     await this.specialtyRepository.delete(id);
-    return this.toDto({ ...specialty, deleted_at: new Date() });
+    return {
+      id: specialty.id,
+      name: specialty.name,
+      description: specialty.description ?? null,
+      is_active: specialty.is_active,
+      created_at: specialty.created_at,
+    };
   }
 }

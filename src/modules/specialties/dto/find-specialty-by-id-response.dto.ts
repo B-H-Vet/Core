@@ -1,4 +1,4 @@
-export class SpecialtyResponseDto {
+export class FindSpecialtyByIdResponseDto {
   id!: number;
   name!: string;
   description!: string | null;
