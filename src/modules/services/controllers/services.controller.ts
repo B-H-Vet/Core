@@ -15,17 +15,14 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { CreateServiceResponseDto } from '../dto/create-service-response.dto';
 import { CreateServiceDto } from '../dto/create-service.dto';
-import {
-  GetAllServiceResponseDto,
-  GetServiceResponseDto,
-  CreateServiceResponseDto,
-  UpdateServiceResponseDto,
-  DeleteServiceResponseDto,
-} from '../dto/service-response.dto';
+import { DeleteServiceResponseDto } from '../dto/delete-service-response.dto';
+import { GetAllServiceResponseDto } from '../dto/get-all-service-response.dto';
+import { GetServiceResponseDto } from '../dto/get-service-response.dto';
+import { UpdateServiceResponseDto } from '../dto/update-service-response.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { ServicesService } from '../services/services.service';
-
 interface AuthenticatedUser {
   id: number;
   role: string;

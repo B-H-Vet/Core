@@ -6,14 +6,12 @@ import {
 } from '@nestjs/common';
 
 import { type Service } from '../../../database/schema/services/services.schema';
+import { CreateServiceResponseDto } from '../dto/create-service-response.dto';
 import { CreateServiceDto } from '../dto/create-service.dto';
-import {
-  CreateServiceResponseDto,
-  DeleteServiceResponseDto,
-  GetAllServiceResponseDto,
-  GetServiceResponseDto,
-  UpdateServiceResponseDto,
-} from '../dto/service-response.dto';
+import { DeleteServiceResponseDto } from '../dto/delete-service-response.dto';
+import { GetAllServiceResponseDto } from '../dto/get-all-service-response.dto';
+import { GetServiceResponseDto } from '../dto/get-service-response.dto';
+import { UpdateServiceResponseDto } from '../dto/update-service-response.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import {
   IServiceRepository,
