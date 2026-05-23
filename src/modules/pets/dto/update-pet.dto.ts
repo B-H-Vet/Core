@@ -1,11 +1,4 @@
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsNumber,
-  IsDateString,
-} from 'class-validator';
-
+import { IsString, IsOptional, IsEnum, IsNumber, IsDateString } from 'class-validator';
 import { EstadoMascota } from '../../../database/schema/pets/pets.schema';
 
 export class UpdatePetDto {
