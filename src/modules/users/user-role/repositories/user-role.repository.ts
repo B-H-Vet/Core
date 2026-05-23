@@ -6,7 +6,6 @@ import { DATABASE_CONNECTION } from '../../../../database/database.module';
 import { roles } from '../../../../database/schema/auth/roles.schema';
 import { userRoles } from '../../../../database/schema/auth/user-roles.schema';
 import type { UserRole } from '../../../../database/schema/auth/user-roles.schema';
-
 import type {
   IUserRoleRepository,
   UserRoleWithRole,
@@ -44,10 +43,25 @@ export class UserRoleRepository implements IUserRoleRepository {
   async findByUserIdAndRoleId(
     userId: number,
     roleId: number,
-  ): Promise<UserRole | null> {
+  ): Promise<UserRoleWithRole | null> {
     const result = await this.db
-      .select()
+      .select({
+        id: userRoles.id,
+        user_id: userRoles.user_id,
+        role_id: userRoles.role_id,
+        assigned_at: userRoles.assigned_at,
+        approved_at: userRoles.approved_at,
+        approved_by: userRoles.approved_by,
+        revoked_at: userRoles.revoked_at,
+        revoked_by: userRoles.revoked_by,
+        role: {
+          id: roles.id,
+          name: roles.name,
+          requires_approval: roles.requires_approval,
+        },
+      })
       .from(userRoles)
+      .innerJoin(roles, eq(userRoles.role_id, roles.id))
       .where(and(eq(userRoles.user_id, userId), eq(userRoles.role_id, roleId)))
       .limit(1);
     return result[0] ?? null;

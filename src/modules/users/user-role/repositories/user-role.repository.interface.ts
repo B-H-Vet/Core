@@ -24,7 +24,7 @@ export abstract class IUserRoleRepository {
   abstract findByUserIdAndRoleId(
     userId: number,
     roleId: number,
-  ): Promise<UserRole | null>;
+  ): Promise<UserRoleWithRole | null>;
   abstract create(userRole: {
     user: { id: number };
     role: { id: number };
