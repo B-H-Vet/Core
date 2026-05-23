@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 
-import { AdminController } from './controllers/admin.controller';
-import { UsersController } from './controllers/users.controller';
-import { RoleRepository } from './repositories/role.repository';
-import { ROLE_REPOSITORY } from './repositories/role.repository.interface';
-import { UserRoleRepository } from './repositories/user-role.repository';
+import { AdminController } from './role/controllers/admin.controller';
+import { UsersController } from './user/controller/users.controller';
+import { RoleRepository } from './role/repositories/role.repository';
+import { ROLE_REPOSITORY } from './role/repositories/role.repository.interface';
+import { UserRoleRepository } from './user-role/repositories/user-role.repository';
 import { USER_ROLE_REPOSITORY } from './repositories/user-role.repository.interface';
-import { UserRepository } from './repositories/user.repository';
+import { UserRepository } from './user/repositories/user.repository';
 import { USER_REPOSITORY } from './repositories/user.repository.interface';
 import { UsersService } from './services/users.service';
 

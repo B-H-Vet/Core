@@ -7,8 +7,8 @@ import {
 
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import type { User } from '../../../database/schema/auth/users.schema';
-import { UserResponseDto } from '../dto/user-response.dto';
-import { UserMapper } from '../mappers/user.mapper';
+import { UserResponseDto } from '../user/dto/user-response.dto';
+import { UserMapper } from '../user/mappers/user.mapper';
 import {
   IUserRoleRepository,
   USER_ROLE_REPOSITORY,

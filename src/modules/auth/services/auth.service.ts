@@ -18,7 +18,7 @@ import type { User } from '../../../database/schema/auth/users.schema';
 import {
   IRoleRepository,
   ROLE_REPOSITORY,
-} from '../../users/repositories/role.repository.interface';
+} from '../../users/role/repositories/role.repository.interface';
 import {
   IUserRoleRepository,
   USER_ROLE_REPOSITORY,

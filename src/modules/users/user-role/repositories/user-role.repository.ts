@@ -1,16 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull, and } from 'drizzle-orm';
 
-import type { Database } from '../../../database/database.module';
-import { DATABASE_CONNECTION } from '../../../database/database.module';
-import { roles } from '../../../database/schema/auth/roles.schema';
-import { userRoles } from '../../../database/schema/auth/user-roles.schema';
-import type { UserRole } from '../../../database/schema/auth/user-roles.schema';
+import type { Database } from '../../../../database/database.module';
+import { DATABASE_CONNECTION } from '../../../../database/database.module';
+import { roles } from '../../../../database/schema/auth/roles.schema';
+import { userRoles } from '../../../../database/schema/auth/user-roles.schema';
+import type { UserRole } from '../../../../database/schema/auth/user-roles.schema';
 
 import type {
   IUserRoleRepository,
   UserRoleWithRole,
-} from './user-role.repository.interface';
+} from '../repositories/user-role.repository.interface';
 
 @Injectable()
 export class UserRoleRepository implements IUserRoleRepository {
