@@ -1,14 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull } from 'drizzle-orm';
 
-import type { Database } from '../../../database/database.module';
-import { DATABASE_CONNECTION } from '../../../database/database.module';
-import { roles } from '../../../database/schema/auth/roles.schema';
+import type { Database } from '../../../../database/database.module';
+import { DATABASE_CONNECTION } from '../../../../database/database.module';
+import { roles } from '../../../../database/schema/auth/roles.schema';
 import type {
   Role,
   NewRole,
   RolNombre,
-} from '../../../database/schema/auth/roles.schema';
+} from '../../../../database/schema/auth/roles.schema';
 
 import type { IRoleRepository } from './role.repository.interface';
 

@@ -8,7 +8,7 @@ import {
 import {
   IUserRepository,
   USER_REPOSITORY,
-} from '../../users/repositories/user.repository.interface';
+} from '../../users/user/repositories/user.repository.interface';
 import { CreateClientResponseDto } from '../dto/create-client-response.dto';
 import { FindAllClientsResponseDto } from '../dto/find-all-clients-response.dto';
 import { FindClientByIdResponseDto } from '../dto/find-client-by-id-response.dto';
