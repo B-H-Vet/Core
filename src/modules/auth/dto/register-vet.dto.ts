@@ -3,6 +3,7 @@ import {
   IsString,
   MinLength,
   IsOptional,
+  IsArray,
   IsNumber,
 } from 'class-validator';
 
@@ -20,7 +21,8 @@ export class RegisterVetDto {
   @IsString({ message: 'El número de licencia debe ser texto' })
   license_number!: string;
 
-  @IsNumber()
+  @IsArray()
+  @IsNumber({}, { each: true })
   @IsOptional()
-  specialtyId?: number;
+  specialtyIds?: number[];
 }

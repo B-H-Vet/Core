@@ -1,4 +1,4 @@
-import { type Specialty } from '../../../database/schema/specialties/specialties.schema';
+import { type Specialty } from '../../../../database/schema/specialties/specialties.schema';
 
 export const SPECIALTY_REPOSITORY = 'SPECIALTY_REPOSITORY';
 

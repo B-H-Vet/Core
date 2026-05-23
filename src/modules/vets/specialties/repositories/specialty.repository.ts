@@ -4,11 +4,11 @@ import { and, eq, isNull } from 'drizzle-orm';
 import {
   DATABASE_CONNECTION,
   type Database,
-} from '../../../database/database.module';
+} from '../../../../database/database.module';
 import {
   specialties,
   type Specialty,
-} from '../../../database/schema/specialties/specialties.schema';
+} from '../../../../database/schema/specialties/specialties.schema';
 
 import { ISpecialtyRepository } from './specialty.repository.interface';
 

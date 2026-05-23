@@ -9,11 +9,18 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { eq } from 'drizzle-orm';
 import { Response } from 'express';
 
+import { DATABASE_CONNECTION } from '../../../database/database.module';
+import type { Database } from '../../../database/database.module';
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import type { RolNombre } from '../../../database/schema/auth/roles.schema';
+import { userRoles } from '../../../database/schema/auth/user-roles.schema';
 import type { User } from '../../../database/schema/auth/users.schema';
+import { users } from '../../../database/schema/auth/users.schema';
+import { vetSpecialties } from '../../../database/schema/vets/vet-specialties.schema';
+import { vets } from '../../../database/schema/vets/vets.schema';
 import {
   IRoleRepository,
   ROLE_REPOSITORY,
@@ -26,6 +33,10 @@ import {
   IUserRoleRepository,
   USER_ROLE_REPOSITORY,
 } from '../../users/user-role/repositories/user-role.repository.interface';
+import {
+  ISpecialtyRepository,
+  SPECIALTY_REPOSITORY,
+} from '../../vets/specialties/repositories/specialty.repository.interface';
 import { LoginRequestDto } from '../dto/login-request.dto';
 import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
@@ -54,6 +65,12 @@ export class AuthService {
 
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoleRepository: IUserRoleRepository,
+
+    @Inject(SPECIALTY_REPOSITORY)
+    private readonly specialtyRepository: ISpecialtyRepository,
+
+    @Inject(DATABASE_CONNECTION)
+    private readonly db: Database,
   ) {}
 
   private setVerificationCookie(res: Response, userId: number) {
@@ -139,13 +156,90 @@ export class AuthService {
   }
 
   async registerVet(dto: RegisterVetDto, res: Response) {
-    await this.registerUser(
-      dto.nombreCompleto,
+    const usuarioExistente = await this.userRepository.findByEmail(dto.correo);
+    if (usuarioExistente) {
+      throw new ConflictException('El correo ingresado ya está registrado');
+    }
+
+    const rol = await this.roleRepository.findByName(ROL_NOMBRES.VETERINARIO);
+    if (!rol) {
+      throw new BadRequestException('El rol ingresado no existe');
+    }
+
+    if (!rol.id) {
+      throw new BadRequestException('El rol no tiene un id válido');
+    }
+
+    if (dto.specialtyIds && dto.specialtyIds.length > 0) {
+      for (const specialtyId of dto.specialtyIds) {
+        const specialty = await this.specialtyRepository.findById(specialtyId);
+        if (!specialty) {
+          throw new BadRequestException(
+            `La especialidad con id ${String(specialtyId)} no fue encontrada`,
+          );
+        }
+      }
+    }
+
+    const codigo = randomInt(100000, 999999).toString();
+    const passwordHash = await bcrypt.hash(dto.contrasena, 10);
+
+    const user = await this.db.transaction(async (tx) => {
+      await tx.insert(users).values({
+        email: dto.correo,
+        password_hash: passwordHash,
+      });
+
+      const [newUser] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.email, dto.correo))
+        .limit(1);
+
+      if (!newUser) {
+        throw new ConflictException('Error al crear el usuario');
+      }
+
+      await tx.insert(userRoles).values({
+        user_id: newUser.id,
+        role_id: rol.id,
+      });
+
+      await tx.insert(vets).values({
+        user_id: newUser.id,
+        license_number: dto.license_number,
+      });
+
+      if (dto.specialtyIds && dto.specialtyIds.length > 0) {
+        const [newVet] = await tx
+          .select()
+          .from(vets)
+          .where(eq(vets.user_id, newUser.id))
+          .limit(1);
+
+        if (newVet) {
+          await tx.insert(vetSpecialties).values(
+            dto.specialtyIds.map((specialtyId) => ({
+              vet_id: newVet.id,
+              specialty_id: specialtyId,
+            })),
+          );
+        }
+      }
+
+      return newUser;
+    });
+
+    await this.authRedisService.saveVerificationCode(user.id, codigo);
+
+    await this.authMailService.sendVerificationCode(
       dto.correo,
-      dto.contrasena,
-      ROL_NOMBRES.VETERINARIO,
-      res,
+      dto.nombreCompleto,
+      codigo,
     );
+
+    this.setVerificationCookie(res, user.id);
+
     return {
       message:
         'El veterinario fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
