@@ -18,23 +18,35 @@ export interface VetWithRelations {
 }
 
 export interface CreateVetInput {
-  user: { id: number };
+  user: {
+    id: number;
+  };
   license_number: string;
-  specialty?: { id: number } | null;
+  specialty?: {
+    id: number;
+  } | null;
 }
 
 export interface UpdateVetInput {
   id: number;
   license_number?: string;
   is_active?: boolean;
-  specialty?: { id: number | null; name?: string | null } | null;
+  specialty?: {
+    id: number | null;
+    name?: string | null;
+  } | null;
 }
 
 export abstract class IVetRepository {
   abstract findAll(): Promise<VetWithRelations[]>;
+
   abstract findById(id: number): Promise<VetWithRelations | null>;
+
   abstract findByUserId(userId: number): Promise<Vet | null>;
+
   abstract create(vet: CreateVetInput): Promise<VetWithRelations>;
+
   abstract update(vet: UpdateVetInput): Promise<VetWithRelations>;
+
   abstract delete(id: number): Promise<void>;
 }

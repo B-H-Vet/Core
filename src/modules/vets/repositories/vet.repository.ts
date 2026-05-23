@@ -8,35 +8,12 @@ import { specialties } from '../../../database/schema/specialties/specialties.sc
 import { vetSpecialties } from '../../../database/schema/vets/vet-specialties.schema';
 import { Vet, NewVet, vets } from '../../../database/schema/vets/vets.schema';
 
-import { IVetRepository } from './vet.repository.interface';
-
-interface VetWithRelations {
-  id: number;
-  license_number: string;
-  is_active: boolean;
-  created_at: Date;
-  user: {
-    id: number;
-    email: string;
-  };
-  specialty: {
-    id: number | null;
-    name: string | null;
-  };
-}
-
-interface CreateVetInput {
-  user: { id: number };
-  license_number: string;
-  specialty?: { id: number } | null;
-}
-
-interface UpdateVetInput {
-  id: number;
-  license_number?: string;
-  is_active?: boolean;
-  specialty?: { id: number | null; name?: string | null } | null;
-}
+import {
+  IVetRepository,
+  CreateVetInput,
+  UpdateVetInput,
+  VetWithRelations,
+} from './vet.repository.interface';
 
 @Injectable()
 export class VetRepository extends IVetRepository {
@@ -48,7 +25,7 @@ export class VetRepository extends IVetRepository {
   }
 
   async findAll(): Promise<VetWithRelations[]> {
-    return this.db
+    const result = await this.db
       .select({
         id: vets.id,
         license_number: vets.license_number,
@@ -68,6 +45,8 @@ export class VetRepository extends IVetRepository {
       .leftJoin(vetSpecialties, eq(vets.id, vetSpecialties.vet_id))
       .leftJoin(specialties, eq(vetSpecialties.specialty_id, specialties.id))
       .where(isNull(vets.deleted_at));
+
+    return result.map((vet) => this.normalizeVet(vet));
   }
 
   async findById(id: number): Promise<VetWithRelations | null> {
@@ -93,7 +72,11 @@ export class VetRepository extends IVetRepository {
       .where(eq(vets.id, id))
       .limit(1);
 
-    return (result[0] as VetWithRelations | undefined) ?? null;
+    if (!result[0]) {
+      return null;
+    }
+
+    return this.normalizeVet(result[0]);
   }
 
   async findByUserId(userId: number): Promise<Vet | null> {
@@ -114,14 +97,19 @@ export class VetRepository extends IVetRepository {
 
     const newVet = await this.findByUserId(vet.user.id);
 
-    if (vet.specialty?.id && newVet) {
+    if (!newVet) {
+      throw new Error('Error al crear el veterinario');
+    }
+
+    if (vet.specialty?.id) {
       await this.db.insert(vetSpecialties).values({
         vet_id: newVet.id,
         specialty_id: vet.specialty.id,
       });
     }
 
-    const created = await this.findById(newVet?.id ?? 0);
+    const created = await this.findById(newVet.id);
+
     if (!created) {
       throw new Error('Error al crear el veterinario');
     }
@@ -151,6 +139,7 @@ export class VetRepository extends IVetRepository {
     }
 
     const updated = await this.findById(vet.id);
+
     if (!updated) {
       throw new Error('Error al actualizar el veterinario');
     }
@@ -161,7 +150,22 @@ export class VetRepository extends IVetRepository {
   async delete(id: number): Promise<void> {
     await this.db
       .update(vets)
-      .set({ deleted_at: new Date() })
+      .set({
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      })
       .where(eq(vets.id, id));
+  }
+
+  private normalizeVet(vet: VetWithRelations): VetWithRelations {
+    return {
+      ...vet,
+      specialty: vet.specialty?.id
+        ? {
+            id: vet.specialty.id,
+            name: vet.specialty.name,
+          }
+        : null,
+    };
   }
 }
