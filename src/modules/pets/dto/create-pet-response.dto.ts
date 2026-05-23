@@ -1,6 +1,6 @@
 import type { EstadoMascota } from '../../../database/schema/pets/pets.schema';
 
-export class UpdatePetResponseDto {
+export class CreatePetResponseDto {
   id!: number;
   name!: string;
   species!: string;
@@ -9,5 +9,7 @@ export class UpdatePetResponseDto {
   birth_date!: string | null;
   weight!: string | null;
   status!: EstadoMascota;
-  updated_at!: Date;
+  client!: {
+    id: number;
+  };
 }

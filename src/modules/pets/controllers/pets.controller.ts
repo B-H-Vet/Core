@@ -1,11 +1,13 @@
 import {
   Controller,
+  DefaultValuePipe,
   Get,
   Post,
   Patch,
   Delete,
   Param,
   Body,
+  Query,
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
@@ -30,8 +32,12 @@ export class PetsController {
     ROL_NOMBRES.VETERINARIO,
     ROL_NOMBRES.CLIENTE,
   )
-  findByClientId(@Param('clientId', ParseIntPipe) clientId: number) {
-    return this.petsService.findByClientId(clientId);
+  findByClientId(
+    @Param('clientId', ParseIntPipe) clientId: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.petsService.findByClientId(clientId, { page, limit });
   }
 
   @Post(':clientId/pets')
@@ -49,8 +55,11 @@ export class PetsController {
     ROL_NOMBRES.RECEPCIONISTA,
     ROL_NOMBRES.VETERINARIO,
   )
-  findAll() {
-    return this.petsService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    return this.petsService.findAll({ page, limit });
   }
 
   @Get(':id')

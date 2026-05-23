@@ -12,6 +12,7 @@ export interface PetRow {
   weight: string | null;
   status: EstadoMascota;
   created_at: Date;
+  updated_at: Date;
   client: {
     id: number;
   };
@@ -27,10 +28,20 @@ export interface CreatePetInput {
   weight?: number | null;
 }
 
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+}
+
 export abstract class IPetRepository {
-  abstract findAll(): Promise<PetRow[]>;
+  abstract findAll(pagination: PaginationParams): Promise<PetRow[]>;
+  abstract count(): Promise<number>;
   abstract findById(id: number): Promise<PetRow | null>;
-  abstract findByClientId(clientId: number): Promise<PetRow[]>;
+  abstract findByClientId(
+    clientId: number,
+    pagination: PaginationParams,
+  ): Promise<PetRow[]>;
+  abstract countByClientId(clientId: number): Promise<number>;
   abstract create(pet: CreatePetInput): Promise<PetRow>;
   abstract update(pet: PetRow): Promise<PetRow>;
   abstract delete(id: number): Promise<void>;

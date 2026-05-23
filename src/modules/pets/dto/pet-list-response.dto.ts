@@ -1,8 +1,11 @@
-import { PetResponseDto } from './pet-response.dto';
+import type { PetResponseDto } from './pet-response.dto';
 
 export class PetListResponseDto {
   data!: PetResponseDto[];
-  total!: number;
-  page!: number;
-  limit!: number;
+  pagination!: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }

@@ -1,16 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { MySql2Database } from 'drizzle-orm/mysql2';
 
 import { DATABASE_CONNECTION } from '../../../database/database.module';
 import { clients } from '../../../database/schema/clients/clients.schema';
 import { pets } from '../../../database/schema/pets/pets.schema';
 
-import {
+import type {
   CreatePetInput,
-  IPetRepository,
+  PaginationParams,
   PetRow,
 } from './pet.repository.interface';
+import { IPetRepository } from './pet.repository.interface';
 
 const PET_SELECT = {
   id: pets.id,
@@ -22,6 +23,7 @@ const PET_SELECT = {
   weight: pets.weight,
   status: pets.status,
   created_at: pets.created_at,
+  updated_at: pets.updated_at,
   client: {
     id: clients.id,
   },
@@ -38,14 +40,28 @@ export class PetRepository extends IPetRepository {
     super();
   }
 
-  async findAll(): Promise<PetRow[]> {
+  async findAll(pagination: PaginationParams): Promise<PetRow[]> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
     const result = await this.db
       .select(PET_SELECT)
       .from(pets)
       .innerJoin(clients, eq(pets.client_id, clients.id))
-      .where(isNull(pets.deleted_at));
+      .where(isNull(pets.deleted_at))
+      .limit(limit)
+      .offset((page - 1) * limit);
 
     return result as PetRow[];
+  }
+
+  async count(): Promise<number> {
+    const result = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(pets)
+      .where(isNull(pets.deleted_at));
+
+    return result[0]?.count ?? 0;
   }
 
   async findById(id: number): Promise<PetRow | null> {
@@ -59,14 +75,31 @@ export class PetRepository extends IPetRepository {
     return result.length > 0 ? (result[0] as PetRow) : null;
   }
 
-  async findByClientId(clientId: number): Promise<PetRow[]> {
+  async findByClientId(
+    clientId: number,
+    pagination: PaginationParams,
+  ): Promise<PetRow[]> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
     const result = await this.db
       .select(PET_SELECT)
       .from(pets)
       .innerJoin(clients, eq(pets.client_id, clients.id))
-      .where(eq(pets.client_id, clientId));
+      .where(and(eq(pets.client_id, clientId), isNull(pets.deleted_at)))
+      .limit(limit)
+      .offset((page - 1) * limit);
 
     return result as PetRow[];
+  }
+
+  async countByClientId(clientId: number): Promise<number> {
+    const result = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(pets)
+      .where(and(eq(pets.client_id, clientId), isNull(pets.deleted_at)));
+
+    return result[0]?.count ?? 0;
   }
 
   async create(pet: CreatePetInput): Promise<PetRow> {

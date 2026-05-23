@@ -9,12 +9,18 @@ import {
   IClientRepository,
   CLIENT_REPOSITORY,
 } from '../../clients/repositories/client.repository.interface';
+import { CreatePetResponseDto } from '../dto/create-pet-response.dto';
 import { CreatePetDto } from '../dto/create-pet.dto';
+import { DeletePetResponseDto } from '../dto/delete-pet-response.dto';
+import { FindPetByIdResponseDto } from '../dto/find-pet-by-id-response.dto';
+import { PetListResponseDto } from '../dto/pet-list-response.dto';
 import { PetResponseDto } from '../dto/pet-response.dto';
+import { UpdatePetResponseDto } from '../dto/update-pet-response.dto';
 import { UpdatePetDto } from '../dto/update-pet.dto';
 import {
   IPetRepository,
   PET_REPOSITORY,
+  PaginationParams,
   PetRow,
 } from '../repositories/pet.repository.interface';
 
@@ -28,7 +34,7 @@ export class PetsService {
     private readonly clientRepository: IClientRepository,
   ) {}
 
-  private toDto(pet: PetRow): PetResponseDto {
+  private toPetResponseDto(pet: PetRow): PetResponseDto {
     return {
       id: pet.id,
       name: pet.name,
@@ -45,25 +51,79 @@ export class PetsService {
     };
   }
 
-  async findAll(): Promise<PetResponseDto[]> {
-    const pets = await this.petRepository.findAll();
-    return pets.map((p) => this.toDto(p));
+  async findAll(pagination: PaginationParams): Promise<PetListResponseDto> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
+    const [pets, total] = await Promise.all([
+      this.petRepository.findAll({ page, limit }),
+      this.petRepository.count(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: pets.map((p) => this.toPetResponseDto(p)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 
-  async findById(id: number): Promise<PetResponseDto> {
+  async findById(id: number): Promise<FindPetByIdResponseDto> {
     const pet = await this.petRepository.findById(id);
     if (!pet) {
       throw new NotFoundException('La mascota ingresada no fue encontrada');
     }
-    return this.toDto(pet);
+
+    return {
+      id: pet.id,
+      name: pet.name,
+      species: pet.species,
+      breed: pet.breed,
+      color: pet.color,
+      birth_date: pet.birth_date,
+      weight: pet.weight,
+      status: pet.status,
+      created_at: pet.created_at,
+      client: {
+        id: pet.client.id,
+      },
+    };
   }
 
-  async findByClientId(clientId: number): Promise<PetResponseDto[]> {
-    const pets = await this.petRepository.findByClientId(clientId);
-    return pets.map((p) => this.toDto(p));
+  async findByClientId(
+    clientId: number,
+    pagination: PaginationParams,
+  ): Promise<PetListResponseDto> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
+    const [pets, total] = await Promise.all([
+      this.petRepository.findByClientId(clientId, { page, limit }),
+      this.petRepository.countByClientId(clientId),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: pets.map((p) => this.toPetResponseDto(p)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 
-  async create(clientId: number, dto: CreatePetDto): Promise<PetResponseDto> {
+  async create(
+    clientId: number,
+    dto: CreatePetDto,
+  ): Promise<CreatePetResponseDto> {
     const client = await this.clientRepository.findById(clientId);
     if (!client) {
       throw new NotFoundException('El cliente ingresado no fue encontrado');
@@ -79,10 +139,22 @@ export class PetsService {
       weight: dto.weight ?? null,
     });
 
-    return this.toDto(pet);
+    return {
+      id: pet.id,
+      name: pet.name,
+      species: pet.species,
+      breed: pet.breed,
+      color: pet.color,
+      birth_date: pet.birth_date,
+      weight: pet.weight,
+      status: pet.status,
+      client: {
+        id: pet.client.id,
+      },
+    };
   }
 
-  async update(id: number, dto: UpdatePetDto): Promise<PetResponseDto> {
+  async update(id: number, dto: UpdatePetDto): Promise<UpdatePetResponseDto> {
     if (Object.keys(dto).length === 0) {
       throw new BadRequestException(
         'Debes ingresar al menos un campo para actualizar',
@@ -106,15 +178,32 @@ export class PetsService {
     };
 
     const result = await this.petRepository.update(updatedPet);
-    return this.toDto(result);
+
+    return {
+      id: result.id,
+      name: result.name,
+      species: result.species,
+      breed: result.breed,
+      color: result.color,
+      birth_date: result.birth_date,
+      weight: result.weight,
+      status: result.status,
+      updated_at: result.updated_at,
+    };
   }
 
-  async delete(id: number): Promise<string> {
+  async delete(id: number): Promise<DeletePetResponseDto> {
     const pet = await this.petRepository.findById(id);
     if (!pet) {
       throw new NotFoundException('La mascota ingresada no fue encontrada');
     }
+
     await this.petRepository.delete(id);
-    return 'La mascota fue eliminada correctamente';
+
+    return {
+      id: pet.id,
+      message: 'La mascota fue eliminada correctamente',
+      deleted_at: new Date(),
+    };
   }
 }
