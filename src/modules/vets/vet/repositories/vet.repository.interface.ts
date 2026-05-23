@@ -1,4 +1,9 @@
-import type { Vet } from '../../../database/schema/vets/vets.schema';
+import type { Vet } from '../../../../database/schema/vets/vets.schema';
+
+export interface PaginationParams {
+  page?: number | undefined;
+  limit?: number | undefined;
+}
 
 export const VET_REPOSITORY = 'VET_REPOSITORY';
 
@@ -11,10 +16,10 @@ export interface VetWithRelations {
     id: number;
     email: string;
   };
-  specialty: {
-    id: number | null;
-    name: string | null;
-  } | null;
+  specialties: {
+    id: number;
+    name: string;
+  }[];
 }
 
 export interface CreateVetInput {
@@ -22,23 +27,18 @@ export interface CreateVetInput {
     id: number;
   };
   license_number: string;
-  specialty?: {
-    id: number;
-  } | null;
 }
 
 export interface UpdateVetInput {
   id: number;
   license_number?: string;
   is_active?: boolean;
-  specialty?: {
-    id: number | null;
-    name?: string | null;
-  } | null;
 }
 
 export abstract class IVetRepository {
-  abstract findAll(): Promise<VetWithRelations[]>;
+  abstract findAll(pagination?: PaginationParams): Promise<VetWithRelations[]>;
+
+  abstract count(): Promise<number>;
 
   abstract findById(id: number): Promise<VetWithRelations | null>;
 

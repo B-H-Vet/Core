@@ -4,15 +4,15 @@ export class VetUserResponseDto {
 }
 
 export class VetSpecialtyResponseDto {
-  id!: number | null;
-  name!: string | null;
+  id!: number;
+  name!: string;
 }
 
-export class VetResponseDto {
+export class FindVetByIdResponseDto {
   id!: number;
   license_number!: string;
-  specialty!: VetSpecialtyResponseDto | null;
   is_active!: boolean;
   created_at!: Date;
   user!: VetUserResponseDto;
+  specialties!: VetSpecialtyResponseDto[];
 }

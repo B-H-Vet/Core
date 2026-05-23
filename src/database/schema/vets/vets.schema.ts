@@ -13,7 +13,7 @@ export const vets = mysqlTable('vets', {
   user_id: int('user_id')
     .notNull()
     .references(() => users.id),
-  license_number: varchar('license_number', { length: 100 }).notNull(),
+  license_number: varchar('license_number', { length: 100 }).notNull().unique(),
   is_active: boolean('is_active').notNull().default(true),
   created_at: datetime('created_at').notNull().default(new Date()),
   updated_at: datetime('updated_at').notNull().default(new Date()),

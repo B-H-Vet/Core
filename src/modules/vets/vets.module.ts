@@ -1,23 +1,22 @@
 import { Module } from '@nestjs/common';
 
-import { SpecialtiesModule } from '../specialties/specialties.module';
-import { UsersModule } from '../users/users.module';
-
-import { VetsController } from './controllers/vets.controller';
-import { VetRepository } from './repositories/vet.repository';
-import { VET_REPOSITORY } from './repositories/vet.repository.interface';
-import { VetsService } from './services/vets.service';
+import { SpecialtiesModule } from './specialties/specialties.module';
+import { VetModule } from './vet/vet.module';
+import { VetSpecialtiesModule } from './vet-specialties/vet-specialties.module';
+import { VetsRepositoriesModule } from './vets-repositories.module';
 
 @Module({
-  imports: [UsersModule, SpecialtiesModule],
-  controllers: [VetsController],
-  providers: [
-    VetsService,
-    {
-      provide: VET_REPOSITORY,
-      useClass: VetRepository,
-    },
+  imports: [
+    VetsRepositoriesModule,
+    VetModule,
+    VetSpecialtiesModule,
+    SpecialtiesModule,
   ],
-  exports: [VetsService, VET_REPOSITORY],
+  exports: [
+    VetsRepositoriesModule,
+    VetModule,
+    VetSpecialtiesModule,
+    SpecialtiesModule,
+  ],
 })
 export class VetsModule {}
