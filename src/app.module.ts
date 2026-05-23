@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { RedisModule } from './common/redis/redis.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientsModule } from './modules/clients/clients.module';
@@ -17,6 +18,7 @@ import { UsersModule } from './modules/users/users.module';
     AuthModule,
     UsersModule,
     ClientsModule,
+    RedisModule,
   ],
   controllers: [AppController],
   providers: [AppService],

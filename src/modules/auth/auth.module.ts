@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
 import { MailModule } from '../../common/mail/mail.module';
+import { RedisModule } from '../../common/redis/redis.module';
 import { ClientsModule } from '../clients/clients.module';
 import { UsersModule } from '../users/users.module';
 import { VetsModule } from '../vets/vets.module';
@@ -11,6 +12,8 @@ import { VetsModule } from '../vets/vets.module';
 import { AuthController } from './controllers/auth.controller';
 import { RegisterController } from './controllers/register.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuthMailService } from './services/auth-mail.service';
+import { AuthRedisService } from './services/auth-redis.service';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -27,12 +30,19 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
     UsersModule,
     MailModule,
+    RedisModule,
     ClientsModule,
     VetsModule,
     ConfigModule,
   ],
   controllers: [AuthController, RegisterController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
+  providers: [
+    AuthService,
+    AuthMailService,
+    AuthRedisService,
+    JwtStrategy,
+    JwtAuthGuard,
+  ],
   exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}
