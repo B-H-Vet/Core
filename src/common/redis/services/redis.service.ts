@@ -9,21 +9,8 @@ export class RedisService implements OnModuleDestroy {
     password: process.env.REDIS_PASSWORD,
   });
 
-  async saveVerificationCode(userId: number, code: string): Promise<void> {
-    await this.client.set(
-      `verification:${String(userId)}`,
-      code,
-      'EX',
-      60 * 10,
-    );
-  }
-
-  async getVerificationCode(userId: number): Promise<string | null> {
-    return await this.client.get(`verification:${String(userId)}`);
-  }
-
-  async deleteVerificationCode(userId: number): Promise<void> {
-    await this.client.del(`verification:${String(userId)}`);
+  getClient() {
+    return this.client;
   }
 
   onModuleDestroy() {

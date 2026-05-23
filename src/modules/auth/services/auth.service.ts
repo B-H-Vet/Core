@@ -11,8 +11,6 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Response } from 'express';
 
-import { MailService } from '../../../common/mail/mail.service';
-import { RedisService } from '../../../common/redis/services/redis.service';
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import type { RolNombre } from '../../../database/schema/auth/roles.schema';
 import type { User } from '../../../database/schema/auth/users.schema';
@@ -34,6 +32,9 @@ import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
 import { RegisterVetDto } from '../dto/register-vet.dto';
 import { VerifyCodeRequestDto } from '../dto/verify-code-request.dto';
 
+import { AuthMailService } from './auth-mail.service';
+import { AuthRedisService } from './auth-redis.service';
+
 interface RequestWithCookies {
   cookies: Record<string, string | undefined>;
 }
@@ -42,8 +43,8 @@ interface RequestWithCookies {
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
-    private readonly mailService: MailService,
-    private readonly redisService: RedisService,
+    private readonly authMailService: AuthMailService,
+    private readonly authRedisService: AuthRedisService,
 
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
@@ -108,11 +109,15 @@ export class AuthService {
       throw new BadRequestException('El rol no tiene un id válido');
     }
 
-    await this.redisService.saveVerificationCode(user.id, codigo);
+    await this.authRedisService.saveVerificationCode(user.id, codigo);
 
     await this.userRoleRepository.create({ user, role: rol });
 
-    await this.mailService.sendVerificationCode(correo, nombreCompleto, codigo);
+    await this.authMailService.sendVerificationCode(
+      correo,
+      nombreCompleto,
+      codigo,
+    );
 
     this.setVerificationCookie(res, user.id);
 
@@ -180,7 +185,7 @@ export class AuthService {
       throw new BadRequestException('El usuario no fue encontrado');
     }
 
-    const storedCode = await this.redisService.getVerificationCode(userId);
+    const storedCode = await this.authRedisService.getVerificationCode(userId);
     if (!storedCode) {
       throw new BadRequestException('El código de verificación ha expirado');
     }
@@ -189,7 +194,7 @@ export class AuthService {
       throw new BadRequestException('El código ingresado es incorrecto');
     }
 
-    await this.redisService.deleteVerificationCode(userId);
+    await this.authRedisService.deleteVerificationCode(userId);
 
     const updatedUser: User = {
       ...user,
@@ -238,9 +243,9 @@ export class AuthService {
 
     const newCode = randomInt(100000, 999999).toString();
 
-    await this.redisService.saveVerificationCode(user.id, newCode);
+    await this.authRedisService.saveVerificationCode(user.id, newCode);
 
-    await this.mailService.sendVerificationCode(correo, correo, newCode);
+    await this.authMailService.sendVerificationCode(correo, correo, newCode);
 
     this.setVerificationCookie(res, user.id);
 
