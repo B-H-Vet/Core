@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, isNull } from 'drizzle-orm';
 
-import type { Database } from '../../../database/database.module';
-import { DATABASE_CONNECTION } from '../../../database/database.module';
+import type { Database } from '../../../../database/database.module';
+import { DATABASE_CONNECTION } from '../../../../database/database.module';
 import {
   users,
   type NewUser,
   User,
-} from '../../../database/schema/auth/users.schema';
+} from '../../../../database/schema/auth/users.schema';
 
 import { IUserRepository } from './user.repository.interface';
 

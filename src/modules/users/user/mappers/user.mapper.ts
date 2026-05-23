@@ -1,6 +1,6 @@
-import type { User } from '../../../database/schema/auth/users.schema';
+import type { User } from '../../../../database/schema/auth/users.schema';
+import type { UserRoleWithRole } from '../../user-role/repositories/user-role.repository.interface';
 import type { UserResponseDto } from '../dto/user-response.dto';
-import type { UserRoleWithRole } from '../repositories/user-role.repository.interface';
 
 export class UserMapper {
   static toDto(user: User, userRoles?: UserRoleWithRole[]): UserResponseDto {

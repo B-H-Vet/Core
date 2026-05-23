@@ -1,4 +1,4 @@
-import type { Role } from '../../../database/schema/auth/roles.schema';
+import type { Role } from '../../../../database/schema/auth/roles.schema';
 
 export class UserResponseDto {
   id!: number;
