@@ -2,7 +2,7 @@ import type {
   Role,
   NewRole,
   RolNombre,
-} from '../../../database/schema/auth/roles.schema';
+} from '../../../../database/schema/auth/roles.schema';
 
 export const ROLE_REPOSITORY = 'ROLE_REPOSITORY';
 

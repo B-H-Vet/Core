@@ -18,15 +18,15 @@ import type { User } from '../../../database/schema/auth/users.schema';
 import {
   IRoleRepository,
   ROLE_REPOSITORY,
-} from '../../users/repositories/role.repository.interface';
-import {
-  IUserRoleRepository,
-  USER_ROLE_REPOSITORY,
-} from '../../users/repositories/user-role.repository.interface';
+} from '../../users/role/repositories/role.repository.interface';
 import {
   IUserRepository,
   USER_REPOSITORY,
-} from '../../users/repositories/user.repository.interface';
+} from '../../users/user/repositories/user.repository.interface';
+import {
+  IUserRoleRepository,
+  USER_ROLE_REPOSITORY,
+} from '../../users/user-role/repositories/user-role.repository.interface';
 import { LoginRequestDto } from '../dto/login-request.dto';
 import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';

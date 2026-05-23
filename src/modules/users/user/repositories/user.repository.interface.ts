@@ -1,4 +1,7 @@
-import type { User, NewUser } from '../../../database/schema/auth/users.schema';
+import type {
+  User,
+  NewUser,
+} from '../../../../database/schema/auth/users.schema';
 
 export const USER_REPOSITORY = 'USER_REPOSITORY';
 
