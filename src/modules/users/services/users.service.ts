@@ -12,11 +12,11 @@ import { UserMapper } from '../user/mappers/user.mapper';
 import {
   IUserRoleRepository,
   USER_ROLE_REPOSITORY,
-} from '../repositories/user-role.repository.interface';
+} from '../user-role/repositories/user-role.repository.interface';
 import {
   IUserRepository,
   USER_REPOSITORY,
-} from '../repositories/user.repository.interface';
+} from '../user/repositories/user.repository.interface';
 
 @Injectable()
 export class UsersService {

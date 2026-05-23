@@ -5,9 +5,9 @@ import { UsersController } from './user/controller/users.controller';
 import { RoleRepository } from './role/repositories/role.repository';
 import { ROLE_REPOSITORY } from './role/repositories/role.repository.interface';
 import { UserRoleRepository } from './user-role/repositories/user-role.repository';
-import { USER_ROLE_REPOSITORY } from './repositories/user-role.repository.interface';
+import { USER_ROLE_REPOSITORY } from '../../../src/modules/users/user-role/repositories/user-role.repository.interface';
 import { UserRepository } from './user/repositories/user.repository';
-import { USER_REPOSITORY } from './repositories/user.repository.interface';
+import { USER_REPOSITORY } from './user/repositories/user.repository.interface';
 import { UsersService } from './services/users.service';
 
 @Module({

@@ -1,5 +1,5 @@
-import type { Role } from '../../../database/schema/auth/roles.schema';
-import type { UserRole } from '../../../database/schema/auth/user-roles.schema';
+import type { Role } from '../../../../database/schema/auth/roles.schema';
+import type { UserRole } from '../../../../database/schema/auth/user-roles.schema';
 
 export interface UserRoleWithRole {
   id: number;
