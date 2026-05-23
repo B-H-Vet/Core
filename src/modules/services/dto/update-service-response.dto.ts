@@ -1,4 +1,4 @@
-export class ServiceResponseDto {
+export class UpdateServiceResponseDto {
   id!: number;
   name!: string;
   description!: string | null;
