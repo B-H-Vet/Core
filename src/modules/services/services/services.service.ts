@@ -7,7 +7,13 @@ import {
 
 import { type Service } from '../../../database/schema/services/services.schema';
 import { CreateServiceDto } from '../dto/create-service.dto';
-import { ServiceResponseDto } from '../dto/service-response.dto';
+import {
+  CreateServiceResponseDto,
+  DeleteServiceResponseDto,
+  GetAllServiceResponseDto,
+  GetServiceResponseDto,
+  UpdateServiceResponseDto,
+} from '../dto/service-response.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import {
   IServiceRepository,
@@ -21,7 +27,7 @@ export class ServicesService {
     private readonly serviceRepository: IServiceRepository,
   ) {}
 
-  private toDto(service: Service): ServiceResponseDto {
+  private toDto(service: Service): GetAllServiceResponseDto {
     return {
       id: service.id,
       name: service.name,
@@ -32,7 +38,18 @@ export class ServicesService {
     };
   }
 
-  async findAll(role?: string): Promise<ServiceResponseDto[]> {
+  private toDeleteDto(service: Service): DeleteServiceResponseDto {
+    return {
+      id: service.id,
+      name: service.name,
+      description: service.description ?? null,
+      price: service.price,
+      is_active: service.is_active,
+      deleted_at: service.deleted_at ?? new Date(),
+    };
+  }
+
+  async findAll(role?: string): Promise<GetAllServiceResponseDto[]> {
     const all = await this.serviceRepository.findAll();
     if (role === 'CLIENTE') {
       return all.filter((s) => s.is_active).map((s) => this.toDto(s));
@@ -40,7 +57,7 @@ export class ServicesService {
     return all.map((s) => this.toDto(s));
   }
 
-  async findById(id: number, role?: string): Promise<ServiceResponseDto> {
+  async findById(id: number, role?: string): Promise<GetServiceResponseDto> {
     const service = await this.serviceRepository.findById(id);
     if (!service) {
       throw new NotFoundException('El servicio ingresado no fue encontrado');
@@ -51,7 +68,7 @@ export class ServicesService {
     return this.toDto(service);
   }
 
-  async create(dto: CreateServiceDto): Promise<ServiceResponseDto> {
+  async create(dto: CreateServiceDto): Promise<CreateServiceResponseDto> {
     const service = await this.serviceRepository.create({
       name: dto.name,
       description: dto.description ?? null,
@@ -61,7 +78,10 @@ export class ServicesService {
     return this.toDto(service);
   }
 
-  async update(id: number, dto: UpdateServiceDto): Promise<ServiceResponseDto> {
+  async update(
+    id: number,
+    dto: UpdateServiceDto,
+  ): Promise<UpdateServiceResponseDto> {
     if (Object.keys(dto).length === 0) {
       throw new BadRequestException(
         'Debes ingresar al menos un campo para actualizar el servicio',
@@ -71,7 +91,6 @@ export class ServicesService {
     if (!service) {
       throw new NotFoundException('El servicio ingresado no fue encontrado');
     }
-
     const updated = await this.serviceRepository.update({
       id,
       name: dto.name ?? service.name,
@@ -82,12 +101,12 @@ export class ServicesService {
     return this.toDto(updated);
   }
 
-  async delete(id: number): Promise<ServiceResponseDto> {
+  async delete(id: number): Promise<DeleteServiceResponseDto> {
     const service = await this.serviceRepository.findById(id);
     if (!service) {
       throw new NotFoundException('El servicio ingresado no fue encontrado');
     }
     await this.serviceRepository.delete(id);
-    return this.toDto({ ...service, deleted_at: new Date() });
+    return this.toDeleteDto({ ...service, deleted_at: new Date() });
   }
 }
