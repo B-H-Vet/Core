@@ -7,8 +7,8 @@ import { RedisModule } from './common/redis/redis.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { HospitalizationsModule } from './modules/hospitalizations/hospitalizations.module';
 import { UsersModule } from './modules/users/users.module';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,6 +19,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ClientsModule,
     RedisModule,
+    HospitalizationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

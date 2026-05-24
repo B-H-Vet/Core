@@ -101,7 +101,6 @@ export class PetsService {
   ): Promise<PetListResponseDto> {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 10;
-
     const [pets, total] = await Promise.all([
       this.petRepository.findByClientId(clientId, { page, limit }),
       this.petRepository.countByClientId(clientId),
