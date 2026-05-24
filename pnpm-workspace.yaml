@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - nodemailer@8.0.8

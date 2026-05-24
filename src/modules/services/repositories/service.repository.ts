@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, inArray } from 'drizzle-orm';
 
 import {
   DATABASE_CONNECTION,
@@ -78,5 +78,20 @@ export class ServiceRepository extends IServiceRepository {
       .update(services)
       .set({ deleted_at: new Date() })
       .where(eq(services.id, id));
+  }
+
+  async findManyByIds(ids: number[]): Promise<Service[]> {
+    if (ids.length === 0) return [];
+
+    return this.db
+      .select()
+      .from(services)
+      .where(
+        and(
+          inArray(services.id, ids),
+          eq(services.is_active, true),
+          isNull(services.deleted_at),
+        ),
+      );
   }
 }

@@ -5,8 +5,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RedisModule } from './common/redis/redis.module';
 import { DatabaseModule } from './database/database.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -19,6 +21,8 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ClientsModule,
     RedisModule,
+    AppointmentsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
