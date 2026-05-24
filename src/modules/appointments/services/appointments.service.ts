@@ -280,6 +280,9 @@ export class AppointmentsService {
         durationMinutes: s.duration_minutes,
       })),
       total,
+      paymentExpirationMinutes: Math.ceil(
+        this.appointmentRedisService.paymentTtlSeconds / 60,
+      ),
     });
 
     return {
@@ -312,7 +315,7 @@ export class AppointmentsService {
 
     if (conflict) {
       throw new ConflictException(
-        'El horario seleccionado ya no está disponible. Por favor, seleccione otro horario.',
+        'El horario seleccionado ya no está disponible porque fue confirmado por otro pago. Por favor, seleccione otro horario.',
       );
     }
 

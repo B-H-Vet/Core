@@ -11,27 +11,24 @@ import {
   CreateVaccineDetailDto,
 } from '../dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from '../dto/update-medical-record.dto';
-
 import {
   IMedicalRecordRepository,
   MEDICAL_RECORD_REPOSITORY,
   MedicalRecordWithPet,
+  UpdateMedicalRecordInput,
 } from '../repositories/medical-record.repository.interface';
-
 import {
   IMedicineDetailRepository,
   MEDICINE_DETAIL_REPOSITORY,
 } from '../repositories/medicine-detail.repository.interface';
-
-import {
-  IVaccineDetailRepository,
-  VACCINE_DETAIL_REPOSITORY,
-} from '../repositories/vaccine-detail.repository.interface';
-
 import {
   IPetWeightRepository,
   PET_WEIGHT_REPOSITORY,
 } from '../repositories/pet-weight.repository.interface';
+import {
+  IVaccineDetailRepository,
+  VACCINE_DETAIL_REPOSITORY,
+} from '../repositories/vaccine-detail.repository.interface';
 
 @Injectable()
 export class MedicalRecordsService {
@@ -63,10 +60,9 @@ export class MedicalRecordsService {
   }
 
   async create(dto: CreateMedicalRecordDto) {
-    const existing =
-      await this.medicalRecordRepository.findByAppointmentId(
-        dto.appointment_id,
-      );
+    const existing = await this.medicalRecordRepository.findByAppointmentId(
+      dto.appointment_id,
+    );
 
     if (existing) {
       throw new BadRequestException(
@@ -161,16 +157,14 @@ export class MedicalRecordsService {
       );
     }
 
-    const updateData: any = { id };
+    const updateData: UpdateMedicalRecordInput = { id };
 
     if (dto.visit_reason !== undefined)
       updateData.visit_reason = dto.visit_reason;
 
-    if (dto.diagnosis !== undefined)
-      updateData.diagnosis = dto.diagnosis;
+    if (dto.diagnosis !== undefined) updateData.diagnosis = dto.diagnosis;
 
-    if (dto.treatment !== undefined)
-      updateData.treatment = dto.treatment;
+    if (dto.treatment !== undefined) updateData.treatment = dto.treatment;
 
     if (dto.weight_at_visit !== undefined)
       updateData.weight_at_visit = String(dto.weight_at_visit);

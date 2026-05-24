@@ -1,11 +1,8 @@
-import {
-  datetime,
-  int,
-  mysqlTable,
-} from 'drizzle-orm/mysql-core';
+import { datetime, int, mysqlTable } from 'drizzle-orm/mysql-core';
+
+import { supplies } from '../inventory/supplies.schema';
 
 import { medicalRecords } from './medical-records.schema';
-import { supplies } from '../inventory/supplies.schema';
 
 export const vaccineDetails = mysqlTable('vaccine_details', {
   id: int('id').primaryKey().autoincrement(),

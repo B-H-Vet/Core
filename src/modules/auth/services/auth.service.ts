@@ -128,6 +128,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(contrasena, 10);
 
     const user = await this.userRepository.create({
+      name: nombreCompleto,
       email: correo,
       password_hash: passwordHash,
     });
@@ -200,6 +201,7 @@ export class AuthService {
 
     const user = await this.db.transaction(async (tx) => {
       await tx.insert(users).values({
+        name: dto.nombreCompleto,
         email: dto.correo,
         password_hash: passwordHash,
       });

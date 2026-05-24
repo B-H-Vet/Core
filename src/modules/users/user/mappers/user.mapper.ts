@@ -7,6 +7,7 @@ export class UserMapper {
     const rolActivo = userRoles?.find((ur) => !ur.revoked_at);
     return {
       id: user.id,
+      name: user.name,
       email: user.email,
       email_verified_at: user.email_verified_at,
       approved_at: user.approved_at,

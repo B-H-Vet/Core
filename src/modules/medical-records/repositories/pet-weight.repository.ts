@@ -5,7 +5,6 @@ import {
   DATABASE_CONNECTION,
   type Database,
 } from '../../../database/database.module';
-
 import { pets } from '../../../database/schema/pets/pets.schema';
 
 import { IPetWeightRepository } from './pet-weight.repository.interface';

@@ -5,7 +5,6 @@ import {
   DATABASE_CONNECTION,
   type Database,
 } from '../../../database/database.module';
-
 import {
   vaccineDetails,
   type VaccineDetail,
