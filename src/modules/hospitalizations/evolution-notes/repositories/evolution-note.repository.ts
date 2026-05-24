@@ -4,29 +4,29 @@ import { and, eq, isNull } from 'drizzle-orm';
 import {
   DATABASE_CONNECTION,
   type Database,
-} from '../../../database/database.module';
+} from '../../../../database/database.module';
 import {
   evolutionNotes,
   type EvolutionNote,
-} from '../../../database/schema/hospitalizations/evolution-notes.schema';
+} from '../../../../database/schema/hospitalizations/evolution-notes.schema';
 
 import { IEvolutionNoteRepository } from './evolution-note.repository.interface';
 
 @Injectable()
-export class EvolutionNoteRepository extends IEvolutionNoteRepository {
+export class EvolutionNoteRepository implements IEvolutionNoteRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-  ) {
-    super();
-  }
+  ) {}
 
   async create(data: {
     hospitalization_id: number;
+    vet_id: number;
     note: string;
   }): Promise<EvolutionNote> {
     await this.db.insert(evolutionNotes).values({
       hospitalization_id: data.hospitalization_id,
+      vet_id: data.vet_id,
       note: data.note,
       created_at: new Date(),
       updated_at: new Date(),
@@ -39,6 +39,7 @@ export class EvolutionNoteRepository extends IEvolutionNoteRepository {
         and(
           eq(evolutionNotes.hospitalization_id, data.hospitalization_id),
           eq(evolutionNotes.note, data.note),
+          eq(evolutionNotes.vet_id, data.vet_id),
           isNull(evolutionNotes.deleted_at),
         ),
       )

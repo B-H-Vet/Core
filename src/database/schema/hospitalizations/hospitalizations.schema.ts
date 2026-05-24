@@ -1,6 +1,7 @@
 import { datetime, int, mysqlEnum, mysqlTable } from 'drizzle-orm/mysql-core';
 
 import { pets } from '../pets/pets.schema';
+import { vets } from '../vets/vets.schema';
 
 export const egressStatusEnum = mysqlEnum('egress_status', [
   'RECOVERED',
@@ -14,6 +15,10 @@ export const hospitalizations = mysqlTable('hospitalizations', {
   pet_id: int('pet_id')
     .notNull()
     .references(() => pets.id),
+
+  vet_id: int('vet_id')
+    .notNull()
+    .references(() => vets.id),
 
   admission_date: datetime('admission_date').notNull(),
 

@@ -1,5 +1,7 @@
 import { datetime, int, mysqlTable, text } from 'drizzle-orm/mysql-core';
 
+import { vets } from '../vets/vets.schema';
+
 import { hospitalizations } from './hospitalizations.schema';
 
 export const evolutionNotes = mysqlTable('evolution_notes', {
@@ -8,6 +10,10 @@ export const evolutionNotes = mysqlTable('evolution_notes', {
   hospitalization_id: int('hospitalization_id')
     .notNull()
     .references(() => hospitalizations.id),
+
+  vet_id: int('vet_id')
+    .notNull()
+    .references(() => vets.id),
 
   note: text('note').notNull(),
 

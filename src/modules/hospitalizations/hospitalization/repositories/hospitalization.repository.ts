@@ -1,17 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import {
   DATABASE_CONNECTION,
   type Database,
-} from '../../../database/database.module';
+} from '../../../../database/database.module';
 import {
   hospitalizations,
   type EgressStatus,
   type Hospitalization,
-} from '../../../database/schema/hospitalizations/hospitalizations.schema';
+} from '../../../../database/schema/hospitalizations/hospitalizations.schema';
+import { pets } from '../../../../database/schema/pets/pets.schema';
 
-import { IHospitalizationRepository } from './hospitalization.repository.interface';
+import {
+  IHospitalizationRepository,
+  type HospitalizationWithPet,
+} from './hospitalization.repository.interface';
 
 @Injectable()
 export class HospitalizationRepository extends IHospitalizationRepository {
@@ -22,9 +26,10 @@ export class HospitalizationRepository extends IHospitalizationRepository {
     super();
   }
 
-  async create(petId: number): Promise<Hospitalization> {
+  async create(petId: number, vetId: number): Promise<Hospitalization> {
     await this.db.insert(hospitalizations).values({
       pet_id: petId,
+      vet_id: vetId,
       admission_date: new Date(),
       created_at: new Date(),
       updated_at: new Date(),
@@ -36,6 +41,7 @@ export class HospitalizationRepository extends IHospitalizationRepository {
       .where(
         and(
           eq(hospitalizations.pet_id, petId),
+          eq(hospitalizations.vet_id, vetId),
           isNull(hospitalizations.egress_date),
           isNull(hospitalizations.deleted_at),
         ),
@@ -68,6 +74,32 @@ export class HospitalizationRepository extends IHospitalizationRepository {
     return result[0] ?? null;
   }
 
+  async findByIdWithPet(id: number): Promise<HospitalizationWithPet | null> {
+    const result = await this.db
+      .select({
+        id: hospitalizations.id,
+        pet_id: hospitalizations.pet_id,
+        vet_id: hospitalizations.vet_id,
+        admission_date: hospitalizations.admission_date,
+        egress_date: hospitalizations.egress_date,
+        egress_status: hospitalizations.egress_status,
+        created_at: hospitalizations.created_at,
+        updated_at: hospitalizations.updated_at,
+        deleted_at: hospitalizations.deleted_at,
+        pet: {
+          client_id: pets.client_id,
+        },
+      })
+      .from(hospitalizations)
+      .innerJoin(pets, eq(hospitalizations.pet_id, pets.id))
+      .where(
+        and(eq(hospitalizations.id, id), isNull(hospitalizations.deleted_at)),
+      )
+      .limit(1);
+
+    return (result[0] as HospitalizationWithPet | undefined) ?? null;
+  }
+
   async findByPetId(petId: number): Promise<Hospitalization[]> {
     return this.db
       .select()
@@ -75,6 +107,29 @@ export class HospitalizationRepository extends IHospitalizationRepository {
       .where(
         and(
           eq(hospitalizations.pet_id, petId),
+          isNull(hospitalizations.deleted_at),
+        ),
+      );
+  }
+
+  async findByClientId(clientId: number): Promise<Hospitalization[]> {
+    const petRows = await this.db
+      .select({ id: pets.id })
+      .from(pets)
+      .where(and(eq(pets.client_id, clientId), isNull(pets.deleted_at)));
+
+    const petIds = petRows.map((p) => p.id);
+
+    if (petIds.length === 0) {
+      return [];
+    }
+
+    return this.db
+      .select()
+      .from(hospitalizations)
+      .where(
+        and(
+          inArray(hospitalizations.pet_id, petIds),
           isNull(hospitalizations.deleted_at),
         ),
       );
