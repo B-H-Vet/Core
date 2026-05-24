@@ -29,6 +29,8 @@ export abstract class IMedicalRecordRepository {
   abstract findAll(): Promise<MedicalRecordWithPet[]>;
   abstract findById(id: number): Promise<MedicalRecordWithPet | null>;
   abstract findByPetId(petId: number): Promise<MedicalRecordWithPet[]>;
-  abstract findByAppointmentId(appointmentId: number): Promise<MedicalRecord | null>;
+  abstract findByAppointmentId(
+    appointmentId: number,
+  ): Promise<MedicalRecord | null>;
   abstract update(data: UpdateMedicalRecordInput): Promise<MedicalRecord>;
 }

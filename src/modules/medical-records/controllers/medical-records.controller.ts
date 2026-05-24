@@ -8,15 +8,13 @@ import {
   Post,
 } from '@nestjs/common';
 
-import { MedicalRecordsService } from '../services/medical-records.service';
 import { CreateMedicalRecordDto } from '../dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from '../dto/update-medical-record.dto';
+import { MedicalRecordsService } from '../services/medical-records.service';
 
 @Controller('medical-records')
 export class MedicalRecordsController {
-  constructor(
-    private readonly medicalRecordsService: MedicalRecordsService,
-  ) {}
+  constructor(private readonly medicalRecordsService: MedicalRecordsService) {}
 
   @Post()
   create(@Body() dto: CreateMedicalRecordDto) {

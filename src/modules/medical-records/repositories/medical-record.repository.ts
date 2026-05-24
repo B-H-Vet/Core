@@ -5,9 +5,7 @@ import {
   DATABASE_CONNECTION,
   type Database,
 } from '../../../database/database.module';
-
 import { appointments } from '../../../database/schema/appointments/appointments.schema';
-import { pets } from '../../../database/schema/pets/pets.schema';
 import {
   medicalRecords,
   type MedicalRecord,
@@ -74,7 +72,7 @@ export class MedicalRecordRepository extends IMedicalRecordRepository {
         eq(medicalRecords.appointment_id, appointments.id),
       );
 
-    return result as MedicalRecordWithPet[];
+    return result;
   }
 
   async findById(id: number): Promise<MedicalRecordWithPet | null> {
@@ -123,7 +121,7 @@ export class MedicalRecordRepository extends IMedicalRecordRepository {
       )
       .where(eq(appointments.pet_id, petId));
 
-    return result as MedicalRecordWithPet[];
+    return result;
   }
 
   async findByAppointmentId(

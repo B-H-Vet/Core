@@ -31,6 +31,7 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
   }): Promise<AppointmentEmailInfo | null> {
     const clientResult = await this.db
       .select({
+        name: users.name,
         email: users.email,
         phone: clients.phone,
       })
@@ -61,6 +62,7 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
 
     const vetUserResult = await this.db
       .select({
+        name: users.name,
         email: users.email,
       })
       .from(users)
@@ -69,10 +71,10 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
 
     return {
       clientEmail: clientResult[0].email,
-      clientName: clientResult[0].email,
+      clientName: clientResult[0].name,
       clientPhone: clientResult[0].phone,
       petName: petResult[0].name,
-      vetName: vetUserResult[0]?.email ?? `Veterinario ${String(data.vetId)}`,
+      vetName: vetUserResult[0]?.name ?? `Veterinario ${String(data.vetId)}`,
     };
   }
 }

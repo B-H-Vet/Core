@@ -1,19 +1,15 @@
 import { Module } from '@nestjs/common';
 
 import { MedicalRecordsController } from './controllers/medical-records.controller';
-import { MedicalRecordsService } from './services/medical-records.service';
-
 import { MedicalRecordRepository } from './repositories/medical-record.repository';
 import { MEDICAL_RECORD_REPOSITORY } from './repositories/medical-record.repository.interface';
-
 import { MedicineDetailRepository } from './repositories/medicine-detail.repository';
 import { MEDICINE_DETAIL_REPOSITORY } from './repositories/medicine-detail.repository.interface';
-
-import { VaccineDetailRepository } from './repositories/vaccine-detail.repository';
-import { VACCINE_DETAIL_REPOSITORY } from './repositories/vaccine-detail.repository.interface';
-
 import { PetWeightRepository } from './repositories/pet-weight.repository';
 import { PET_WEIGHT_REPOSITORY } from './repositories/pet-weight.repository.interface';
+import { VaccineDetailRepository } from './repositories/vaccine-detail.repository';
+import { VACCINE_DETAIL_REPOSITORY } from './repositories/vaccine-detail.repository.interface';
+import { MedicalRecordsService } from './services/medical-records.service';
 
 @Module({
   controllers: [MedicalRecordsController],
