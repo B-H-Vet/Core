@@ -23,9 +23,12 @@ import { GetServiceResponseDto } from '../dto/get-service-response.dto';
 import { UpdateServiceResponseDto } from '../dto/update-service-response.dto';
 import { UpdateServiceDto } from '../dto/update-service.dto';
 import { ServicesService } from '../services/services.service';
+
 interface AuthenticatedUser {
   id: number;
-  role: string;
+  email: string;
+  rol: string;
+  profileId: number | null;
 }
 
 @Controller('services')
@@ -43,7 +46,7 @@ export class ServicesController {
   findAll(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<GetAllServiceResponseDto[]> {
-    return this.servicesService.findAll(user.role);
+    return this.servicesService.findAll(user.rol);
   }
 
   @Get(':id')
@@ -57,7 +60,7 @@ export class ServicesController {
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<GetServiceResponseDto> {
-    return this.servicesService.findById(id, user.role);
+    return this.servicesService.findById(id, user.rol);
   }
 
   @Post()
