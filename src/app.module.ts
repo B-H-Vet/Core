@@ -12,6 +12,7 @@ import { HospitalizationsModule } from './modules/hospitalizations/hospitalizati
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UsersModule } from './modules/users/users.module';
+import { VaccinationAlertsModule } from './modules/vaccination-alerts/vaccination-alerts.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UsersModule } from './modules/users/users.module';
     AppointmentsModule,
     NotificationsModule,
     HospitalizationsModule,
+    VaccinationAlertsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
