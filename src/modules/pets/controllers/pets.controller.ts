@@ -33,13 +33,11 @@ interface AuthenticatedUser {
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PetsController {
   constructor(private readonly petsService: PetsService) {}
-
   @Get(':clientId/pets')
   @Roles(
     ROL_NOMBRES.ADMINISTRADOR,
     ROL_NOMBRES.RECEPCIONISTA,
     ROL_NOMBRES.VETERINARIO,
-    ROL_NOMBRES.CLIENTE,
   )
   findByClientId(
     @Param('clientId', ParseIntPipe) clientId: number,

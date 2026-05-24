@@ -10,3 +10,5 @@ export * from './inventory/supplies.schema';
 export * from './inventory/categories.schema';
 export * from './inventory/measurement-units.schema';
 export * from './vets/vet-specialties.schema';
+export * from './hospitalizations/hospitalizations.schema';
+export * from './hospitalizations/evolution-notes.schema';
