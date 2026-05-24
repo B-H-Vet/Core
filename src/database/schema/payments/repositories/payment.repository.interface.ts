@@ -2,7 +2,7 @@ import type {
   Payment,
   PaymentMethod,
   PaymentStatus,
-} from '../../../database/schema/payments/payments.schema';
+} from '../payments.schema';
 
 export const PAYMENT_REPOSITORY = 'PAYMENT_REPOSITORY';
 

@@ -18,14 +18,14 @@ export enum PaymentMethodDto {
 export class CreatePaymentDto {
   @IsInt()
   @IsNotEmpty()
-  user_id: number;
+  user_id!: number;
 
   @IsNumber()
   @Min(1)
-  amount: number;
+  amount!: number;
 
   @IsEnum(PaymentMethodDto)
-  method: PaymentMethodDto;
+  method!: PaymentMethodDto;
 
   @IsOptional()
   @IsString()

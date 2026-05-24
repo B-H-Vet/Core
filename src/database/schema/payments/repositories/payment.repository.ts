@@ -4,12 +4,12 @@ import { and, eq, isNull } from 'drizzle-orm';
 import {
   DATABASE_CONNECTION,
   type Database,
-} from '../../../database/database.module';
+} from '../../../database.module';
 
 import {
   payments,
   type Payment,
-} from '../../../database/schema/payments/payments.schema';
+} from '../payments.schema';
 
 import {
   CreatePaymentInput,
