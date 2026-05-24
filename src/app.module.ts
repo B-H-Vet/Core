@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { UsersModule } from './modules/users/users.module';
+import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ClientsModule,
     RedisModule,
+    MedicalRecordsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
