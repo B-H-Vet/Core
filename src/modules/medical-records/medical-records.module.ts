@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PetsModule } from '../pets/pets.module';
+
 import { MedicalRecordsController } from './controllers/medical-records.controller';
 import { MedicalRecordRepository } from './repositories/medical-record.repository';
 import { MEDICAL_RECORD_REPOSITORY } from './repositories/medical-record.repository.interface';

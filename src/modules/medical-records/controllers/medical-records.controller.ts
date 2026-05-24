@@ -70,7 +70,7 @@ export class MedicalRecordsController {
   ) {
     if (user.rol === ROL_NOMBRES.CLIENTE) {
       const pet = await this.petRepository.findById(petId);
-      if (!pet || pet.client.id !== user.profileId) {
+      if (pet?.client.id != user.profileId) {
         throw new ForbiddenException(
           'No tienes permiso para ver este historial médico',
         );
@@ -93,7 +93,7 @@ export class MedicalRecordsController {
     const record = await this.medicalRecordsService.findById(id);
     if (user.rol === ROL_NOMBRES.CLIENTE) {
       const pet = await this.petRepository.findById(record.pet_id);
-      if (!pet || pet.client.id !== user.profileId) {
+      if (pet?.client.id != user.profileId) {
         throw new ForbiddenException(
           'No tienes permiso para ver este historial médico',
         );
