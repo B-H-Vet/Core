@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { EmailService } from '../../notifications/services/email.service';
+import { PaymentsService } from '../../payments/services/payments.service';
 import {
   IServiceRepository,
   SERVICE_REPOSITORY,
@@ -46,6 +47,7 @@ export class AppointmentsService {
     private readonly serviceRepository: IServiceRepository,
 
     private readonly emailService: EmailService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   private async getAppointmentTotal(appointmentId: number): Promise<number> {
@@ -101,10 +103,17 @@ export class AppointmentsService {
       );
     }
 
+    const payment = await this.paymentsService.validateApprovedPayment({
+      paymentId: dto.payment_id,
+      expectedAmount: total,
+      userId: dto.user_id,
+    });
+
     const appointment = await this.appointmentRepository.create({
       user_id: dto.user_id,
       vet_id: dto.vet_id,
       pet_id: dto.pet_id,
+      payment_id: payment.id,
       date: appointmentDate,
     });
 
@@ -144,6 +153,7 @@ export class AppointmentsService {
       user_id: appointment.user_id,
       vet_id: appointment.vet_id,
       pet_id: appointment.pet_id,
+      payment_id: appointment.payment_id,
       date: appointment.date,
       status: appointment.status,
       total,
@@ -174,6 +184,7 @@ export class AppointmentsService {
         user_id: appointment.user_id,
         vet_id: appointment.vet_id,
         pet_id: appointment.pet_id,
+        payment_id: appointment.payment_id,
         date: appointment.date,
         status: appointment.status,
         total: await this.getAppointmentTotal(appointment.id),
@@ -212,6 +223,7 @@ export class AppointmentsService {
       user_id: appointment.user_id,
       vet_id: appointment.vet_id,
       pet_id: appointment.pet_id,
+      payment_id: appointment.payment_id,
       date: appointment.date,
       status: appointment.status,
       cancel_reason: appointment.cancel_reason,
@@ -231,17 +243,17 @@ export class AppointmentsService {
       throw new NotFoundException('La cita ingresada no fue encontrada');
     }
 
-    if (appointment.status === 'CANCELLED') {
+    if (appointment.status === 'CANCELADA') {
       throw new BadRequestException('No se puede finalizar una cita cancelada');
     }
 
-    if (appointment.status === 'COMPLETED') {
+    if (appointment.status === 'ATENDIDA') {
       throw new BadRequestException('La cita ya se encuentra finalizada');
     }
 
     const updated = await this.appointmentRepository.updateStatus({
       id,
-      status: 'COMPLETED',
+      status: 'ATENDIDA',
     });
 
     return this.findById(updated.id);
@@ -257,19 +269,19 @@ export class AppointmentsService {
       throw new NotFoundException('La cita ingresada no fue encontrada');
     }
 
-    if (appointment.status === 'COMPLETED') {
+    if (appointment.status === 'ATENDIDA') {
       throw new BadRequestException(
         'No se puede cancelar una cita ya finalizada',
       );
     }
 
-    if (appointment.status === 'CANCELLED') {
+    if (appointment.status === 'CANCELADA') {
       throw new BadRequestException('La cita ya se encuentra cancelada');
     }
 
     const updated = await this.appointmentRepository.updateStatus({
       id,
-      status: 'CANCELLED',
+      status: 'CANCELADA',
       cancel_reason: dto.reason,
       canceled_at: new Date(),
     });
@@ -287,9 +299,9 @@ export class AppointmentsService {
       throw new NotFoundException('La cita ingresada no fue encontrada');
     }
 
-    if (appointment.status !== 'CONFIRMED') {
+    if (appointment.status !== 'PAGADA') {
       throw new BadRequestException(
-        'Solo se pueden reagendar citas confirmadas',
+        'Solo se pueden reagendar citas pagadas',
       );
     }
 
@@ -315,7 +327,7 @@ export class AppointmentsService {
 
     const updated = await this.appointmentRepository.updateStatus({
       id,
-      status: 'CONFIRMED',
+      status: 'PAGADA',
       date: newDate,
       rescheduled_at: new Date(),
     });

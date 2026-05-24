@@ -19,6 +19,10 @@ export class CreateAppointmentDto {
   @IsNotEmpty()
   pet_id!: number;
 
+  @IsInt()
+  @IsNotEmpty()
+  payment_id!: number;
+
   @IsDateString()
   date!: string;
 

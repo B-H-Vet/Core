@@ -5,6 +5,7 @@ import {
   DATABASE_CONNECTION,
   type Database,
 } from '../../../database/database.module';
+
 import {
   appointments,
   type Appointment,
@@ -31,8 +32,9 @@ export class AppointmentRepository extends IAppointmentRepository {
       user_id: data.user_id,
       vet_id: data.vet_id,
       pet_id: data.pet_id,
+      payment_id: data.payment_id,
       date: data.date,
-      status: 'CONFIRMED',
+      status: 'PAGADA',
       created_at: new Date(),
       updated_at: new Date(),
     });
@@ -45,6 +47,7 @@ export class AppointmentRepository extends IAppointmentRepository {
           eq(appointments.user_id, data.user_id),
           eq(appointments.vet_id, data.vet_id),
           eq(appointments.pet_id, data.pet_id),
+          eq(appointments.payment_id, data.payment_id),
           eq(appointments.date, data.date),
           isNull(appointments.deleted_at),
         ),
@@ -98,7 +101,7 @@ export class AppointmentRepository extends IAppointmentRepository {
     const conditions = [
       eq(appointments.vet_id, vetId),
       eq(appointments.date, date),
-      eq(appointments.status, 'CONFIRMED' as const),
+      eq(appointments.status, 'PAGADA' as const),
       isNull(appointments.deleted_at),
     ];
 

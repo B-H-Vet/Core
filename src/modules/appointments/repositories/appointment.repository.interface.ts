@@ -9,6 +9,7 @@ export interface CreateAppointmentInput {
   user_id: number;
   vet_id: number;
   pet_id: number;
+  payment_id: number;
   date: Date;
 }
 

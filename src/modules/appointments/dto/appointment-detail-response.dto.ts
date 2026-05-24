@@ -9,6 +9,7 @@ export class AppointmentDetailResponseDto {
   user_id!: number;
   vet_id!: number;
   pet_id!: number;
+  payment_id!: number;
   date!: Date;
   status!: string;
   cancel_reason!: string | null;

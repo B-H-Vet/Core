@@ -9,11 +9,12 @@ import {
 import { users } from '../auth/users.schema';
 import { pets } from '../pets/pets.schema';
 import { vets } from '../vets/vets.schema';
+import { payments } from '../payments/payments.schema';
 
 export const appointmentStatusEnum = mysqlEnum('status', [
-  'CONFIRMED',
-  'COMPLETED',
-  'CANCELLED',
+  'PAGADA',
+  'ATENDIDA',
+  'CANCELADA',
 ]);
 
 export const appointments = mysqlTable('appointments', {
@@ -31,19 +32,39 @@ export const appointments = mysqlTable('appointments', {
     .notNull()
     .references(() => pets.id),
 
+  payment_id: int('payment_id')
+    .notNull()
+    .references(() => payments.id),
+
   date: datetime('date').notNull(),
 
-  status: appointmentStatusEnum.notNull().default('CONFIRMED'),
+  end_date: datetime('end_date').notNull(),
+
+  status: appointmentStatusEnum.notNull().default('PAGADA'),
+
+  invoice_number: varchar('invoice_number', { length: 100 }),
+
+  paid_at: datetime('paid_at'),
 
   rescheduled_at: datetime('rescheduled_at'),
+
   canceled_at: datetime('canceled_at'),
+
   cancel_reason: varchar('cancel_reason', { length: 500 }),
 
-  created_at: datetime('created_at').notNull().default(new Date()),
-  updated_at: datetime('updated_at').notNull().default(new Date()),
+  created_at: datetime('created_at')
+    .notNull()
+    .default(new Date()),
+
+  updated_at: datetime('updated_at')
+    .notNull()
+    .default(new Date()),
+
   deleted_at: datetime('deleted_at'),
 });
 
 export type Appointment = typeof appointments.$inferSelect;
+
 export type NewAppointment = typeof appointments.$inferInsert;
+
 export type AppointmentStatus = Appointment['status'];

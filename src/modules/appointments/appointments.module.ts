@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { ServicesModule } from '../services/services.module';
 
 import { AppointmentsController } from './controllers/appointments.controller';
@@ -13,7 +14,7 @@ import { APPOINTMENT_REPOSITORY } from './repositories/appointment.repository.in
 import { AppointmentsService } from './services/appointments.service';
 
 @Module({
-  imports: [ServicesModule, NotificationsModule],
+  imports: [ServicesModule, NotificationsModule, PaymentsModule],
   controllers: [AppointmentsController],
   providers: [
     AppointmentsService,
