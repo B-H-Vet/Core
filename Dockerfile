@@ -16,7 +16,10 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
 COPY --from=builder --chown=appuser:appgroup /app/package.json ./package.json
 COPY --from=builder --chown=appuser:appgroup /app/pnpm-lock.yaml ./pnpm-lock.yaml
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+RUN npx playwright install chromium --with-deps \
+    && rm -rf /var/lib/apt/lists/*
 USER appuser
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \

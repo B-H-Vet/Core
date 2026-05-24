@@ -43,6 +43,7 @@ export class ServiceRepository extends IServiceRepository {
       name: service.name,
       description: service.description ?? null,
       price: service.price,
+      duration_minutes: service.duration_minutes ?? 30,
       is_active: service.is_active ?? true,
     });
     const result = (await this.db
@@ -63,6 +64,7 @@ export class ServiceRepository extends IServiceRepository {
         name: service.name,
         description: service.description,
         price: service.price,
+        duration_minutes: service.duration_minutes,
         is_active: service.is_active,
         updated_at: new Date(),
       })

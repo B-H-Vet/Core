@@ -6,6 +6,7 @@ import {
   type Database,
 } from '../../../database/database.module';
 import { users } from '../../../database/schema/auth/users.schema';
+import { clients } from '../../../database/schema/clients/clients.schema';
 import { pets } from '../../../database/schema/pets/pets.schema';
 import { vets } from '../../../database/schema/vets/vets.schema';
 
@@ -31,8 +32,10 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
     const clientResult = await this.db
       .select({
         email: users.email,
+        phone: clients.phone,
       })
       .from(users)
+      .innerJoin(clients, eq(users.id, clients.user_id))
       .where(eq(users.id, data.userId))
       .limit(1);
 
@@ -66,6 +69,8 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
 
     return {
       clientEmail: clientResult[0].email,
+      clientName: clientResult[0].email,
+      clientPhone: clientResult[0].phone,
       petName: petResult[0].name,
       vetName: vetUserResult[0]?.email ?? `Veterinario ${String(data.vetId)}`,
     };

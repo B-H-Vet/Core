@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, isNull, ne } from 'drizzle-orm';
+import { and, count, eq, isNull, lt, gt, ne } from 'drizzle-orm';
 
 import {
   DATABASE_CONNECTION,
@@ -32,7 +32,10 @@ export class AppointmentRepository extends IAppointmentRepository {
       vet_id: data.vet_id,
       pet_id: data.pet_id,
       date: data.date,
-      status: 'CONFIRMED',
+      end_date: data.end_date,
+      status: 'PAGADA',
+      invoice_number: data.invoice_number ?? null,
+      paid_at: data.paid_at ?? new Date(),
       created_at: new Date(),
       updated_at: new Date(),
     });
@@ -42,10 +45,7 @@ export class AppointmentRepository extends IAppointmentRepository {
       .from(appointments)
       .where(
         and(
-          eq(appointments.user_id, data.user_id),
-          eq(appointments.vet_id, data.vet_id),
-          eq(appointments.pet_id, data.pet_id),
-          eq(appointments.date, data.date),
+          eq(appointments.invoice_number, data.invoice_number ?? ''),
           isNull(appointments.deleted_at),
         ),
       )
@@ -81,6 +81,42 @@ export class AppointmentRepository extends IAppointmentRepository {
       .offset(offset);
   }
 
+  async findByClientUserId(
+    userId: number,
+    pagination: PaginationParams,
+  ): Promise<Appointment[]> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const offset = (page - 1) * limit;
+
+    return this.db
+      .select()
+      .from(appointments)
+      .where(
+        and(eq(appointments.user_id, userId), isNull(appointments.deleted_at)),
+      )
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async findByVetId(
+    vetId: number,
+    pagination: PaginationParams,
+  ): Promise<Appointment[]> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const offset = (page - 1) * limit;
+
+    return this.db
+      .select()
+      .from(appointments)
+      .where(
+        and(eq(appointments.vet_id, vetId), isNull(appointments.deleted_at)),
+      )
+      .limit(limit)
+      .offset(offset);
+  }
+
   async count(): Promise<number> {
     const result = await this.db
       .select({ value: count() })
@@ -90,16 +126,40 @@ export class AppointmentRepository extends IAppointmentRepository {
     return result[0]?.value ?? 0;
   }
 
+  async countByClientUserId(userId: number): Promise<number> {
+    const result = await this.db
+      .select({ value: count() })
+      .from(appointments)
+      .where(
+        and(eq(appointments.user_id, userId), isNull(appointments.deleted_at)),
+      );
+
+    return result[0]?.value ?? 0;
+  }
+
+  async countByVetId(vetId: number): Promise<number> {
+    const result = await this.db
+      .select({ value: count() })
+      .from(appointments)
+      .where(
+        and(eq(appointments.vet_id, vetId), isNull(appointments.deleted_at)),
+      );
+
+    return result[0]?.value ?? 0;
+  }
+
   async findVetConflict(
     vetId: number,
-    date: Date,
+    startDate: Date,
+    endDate: Date,
     excludeAppointmentId?: number,
   ): Promise<Appointment | null> {
     const conditions = [
       eq(appointments.vet_id, vetId),
-      eq(appointments.date, date),
-      eq(appointments.status, 'CONFIRMED' as const),
+      ne(appointments.status, 'CANCELADA'),
       isNull(appointments.deleted_at),
+      lt(appointments.date, endDate),
+      gt(appointments.end_date, startDate),
     ];
 
     if (excludeAppointmentId) {
@@ -124,6 +184,9 @@ export class AppointmentRepository extends IAppointmentRepository {
         canceled_at: data.canceled_at,
         rescheduled_at: data.rescheduled_at,
         date: data.date,
+        end_date: data.end_date,
+        paid_at: data.paid_at,
+        invoice_number: data.invoice_number,
         updated_at: new Date(),
       })
       .where(eq(appointments.id, data.id));

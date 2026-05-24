@@ -43,6 +43,7 @@ export class AppointmentServiceRepository extends IAppointmentServiceRepository 
         service_id: appointmentServices.service_id,
         name: services.name,
         unit_price: appointmentServices.unit_price,
+        duration_minutes: services.duration_minutes,
       })
       .from(appointmentServices)
       .innerJoin(services, eq(appointmentServices.service_id, services.id))

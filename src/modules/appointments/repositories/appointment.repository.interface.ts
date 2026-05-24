@@ -10,6 +10,9 @@ export interface CreateAppointmentInput {
   vet_id: number;
   pet_id: number;
   date: Date;
+  end_date: Date;
+  invoice_number?: string;
+  paid_at?: Date;
 }
 
 export interface UpdateAppointmentStatusInput {
@@ -19,6 +22,9 @@ export interface UpdateAppointmentStatusInput {
   canceled_at?: Date | null;
   rescheduled_at?: Date | null;
   date?: Date;
+  end_date?: Date;
+  paid_at?: Date | null;
+  invoice_number?: string | null;
 }
 
 export interface PaginationParams {
@@ -30,11 +36,22 @@ export abstract class IAppointmentRepository {
   abstract create(data: CreateAppointmentInput): Promise<Appointment>;
   abstract findById(id: number): Promise<Appointment | null>;
   abstract findAll(pagination: PaginationParams): Promise<Appointment[]>;
+  abstract findByClientUserId(
+    userId: number,
+    pagination: PaginationParams,
+  ): Promise<Appointment[]>;
+  abstract findByVetId(
+    vetId: number,
+    pagination: PaginationParams,
+  ): Promise<Appointment[]>;
   abstract count(): Promise<number>;
+  abstract countByClientUserId(userId: number): Promise<number>;
+  abstract countByVetId(vetId: number): Promise<number>;
 
   abstract findVetConflict(
     vetId: number,
-    date: Date,
+    startDate: Date,
+    endDate: Date,
     excludeAppointmentId?: number,
   ): Promise<Appointment | null>;
 

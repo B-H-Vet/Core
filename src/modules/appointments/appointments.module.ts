@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 import { NotificationsModule } from '../notifications/notifications.module';
 import { ServicesModule } from '../services/services.module';
+import { VetsRepositoriesModule } from '../vets/vets-repositories.module';
 
 import { AppointmentsController } from './controllers/appointments.controller';
 import { AppointmentInfoRepository } from './repositories/appointment-info.repository';
@@ -10,13 +12,20 @@ import { AppointmentServiceRepository } from './repositories/appointment-service
 import { APPOINTMENT_SERVICE_REPOSITORY } from './repositories/appointment-service.repository.interface';
 import { AppointmentRepository } from './repositories/appointment.repository';
 import { APPOINTMENT_REPOSITORY } from './repositories/appointment.repository.interface';
+import { AppointmentRedisService } from './services/appointment-redis.service';
 import { AppointmentsService } from './services/appointments.service';
 
 @Module({
-  imports: [ServicesModule, NotificationsModule],
+  imports: [
+    ServicesModule,
+    NotificationsModule,
+    VetsRepositoriesModule,
+    ConfigModule,
+  ],
   controllers: [AppointmentsController],
   providers: [
     AppointmentsService,
+    AppointmentRedisService,
     {
       provide: APPOINTMENT_REPOSITORY,
       useClass: AppointmentRepository,

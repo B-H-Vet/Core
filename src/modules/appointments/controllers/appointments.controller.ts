@@ -8,58 +8,104 @@ import {
   Patch,
   Post,
   Query,
+  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
 import { CancelAppointmentDto } from '../dto/cancel-appointment.dto';
 import { CreateAppointmentDto } from '../dto/create-appointment.dto';
 import { RescheduleAppointmentDto } from '../dto/reschedule-appointment.dto';
-import { AppointmentsService } from '../services/appointments.service';
+import {
+  AppointmentsService,
+  CurrentUserPayload,
+} from '../services/appointments.service';
 
 @Controller('appointments')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  create(@Body() dto: CreateAppointmentDto) {
-    return this.appointmentsService.create(dto);
+  @Roles('CLIENTE', 'RECEPCIONISTA', 'ADMINISTRADOR')
+  create(
+    @Body() dto: CreateAppointmentDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.appointmentsService.create(dto, user);
+  }
+
+  @Patch('confirm/:token')
+  confirm(@Param('token') token: string) {
+    return this.appointmentsService.confirm(token);
   }
 
   @Get()
-  findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
-    return this.appointmentsService.findAll({
-      page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 10,
-    });
+  @Roles('CLIENTE', 'RECEPCIONISTA', 'VETERINARIO', 'ADMINISTRADOR')
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @CurrentUser() user?: CurrentUserPayload,
+  ) {
+    if (!user) {
+      throw new UnauthorizedException('User is required');
+    }
+    return this.appointmentsService.findAll(
+      {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10,
+      },
+      user,
+    );
   }
 
   @Get(':id')
-  findById(@Param('id', ParseIntPipe) id: number) {
-    return this.appointmentsService.findById(id);
+  @Roles('CLIENTE', 'RECEPCIONISTA', 'VETERINARIO', 'ADMINISTRADOR')
+  findById(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.appointmentsService.findById(id, user);
   }
 
   @Patch(':id/complete')
-  complete(@Param('id', ParseIntPipe) id: number) {
-    return this.appointmentsService.complete(id);
+  @Roles('VETERINARIO', 'RECEPCIONISTA', 'ADMINISTRADOR')
+  complete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.appointmentsService.complete(id, user);
   }
 
   @Patch(':id/cancel')
+  @Roles('CLIENTE', 'RECEPCIONISTA', 'ADMINISTRADOR')
   cancel(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CancelAppointmentDto,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.appointmentsService.cancel(id, dto);
+    return this.appointmentsService.cancel(id, dto, user);
   }
 
   @Patch(':id/reschedule')
+  @Roles('CLIENTE', 'RECEPCIONISTA', 'ADMINISTRADOR')
   reschedule(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RescheduleAppointmentDto,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.appointmentsService.reschedule(id, dto);
+    return this.appointmentsService.reschedule(id, dto, user);
   }
 
   @Delete(':id')
-  delete(@Param('id', ParseIntPipe) id: number) {
-    return this.appointmentsService.delete(id);
+  @Roles('ADMINISTRADOR')
+  delete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.appointmentsService.delete(id, user);
   }
 }

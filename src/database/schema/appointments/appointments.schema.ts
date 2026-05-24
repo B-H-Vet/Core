@@ -11,9 +11,9 @@ import { pets } from '../pets/pets.schema';
 import { vets } from '../vets/vets.schema';
 
 export const appointmentStatusEnum = mysqlEnum('status', [
-  'CONFIRMED',
-  'COMPLETED',
-  'CANCELLED',
+  'PAGADA',
+  'ATENDIDA',
+  'CANCELADA',
 ]);
 
 export const appointments = mysqlTable('appointments', {
@@ -32,8 +32,12 @@ export const appointments = mysqlTable('appointments', {
     .references(() => pets.id),
 
   date: datetime('date').notNull(),
+  end_date: datetime('end_date').notNull(),
 
-  status: appointmentStatusEnum.notNull().default('CONFIRMED'),
+  status: appointmentStatusEnum.notNull().default('PAGADA'),
+
+  invoice_number: varchar('invoice_number', { length: 100 }),
+  paid_at: datetime('paid_at'),
 
   rescheduled_at: datetime('rescheduled_at'),
   canceled_at: datetime('canceled_at'),

@@ -4,13 +4,10 @@ import {
   IsDateString,
   IsInt,
   IsNotEmpty,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsInt()
-  @IsNotEmpty()
-  user_id!: number;
-
   @IsInt()
   @IsNotEmpty()
   vet_id!: number;
@@ -20,9 +17,14 @@ export class CreateAppointmentDto {
   pet_id!: number;
 
   @IsDateString()
+  @IsNotEmpty()
   date!: string;
 
   @IsArray()
   @ArrayMinSize(1)
   service_ids!: number[];
+
+  @IsInt()
+  @IsOptional()
+  user_id?: number;
 }
