@@ -21,6 +21,10 @@ export class AppointmentRedisService {
   private readonly client: Redis;
   private readonly ttlSeconds: number;
 
+  get paymentTtlSeconds(): number {
+    return this.ttlSeconds;
+  }
+
   constructor(
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,

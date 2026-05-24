@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+<<<<<<< HEAD
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -30,16 +31,25 @@ interface AuthenticatedUser {
   rol: string;
   profileId: number | null;
 }
+=======
+import { CreateMedicalRecordDto } from '../dto/create-medical-record.dto';
+import { UpdateMedicalRecordDto } from '../dto/update-medical-record.dto';
+import { MedicalRecordsService } from '../services/medical-records.service';
+>>>>>>> develop
 
 @Controller('medical-records')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MedicalRecordsController {
+<<<<<<< HEAD
   constructor(
     private readonly medicalRecordsService: MedicalRecordsService,
 
     @Inject(PET_REPOSITORY)
     private readonly petRepository: IPetRepository,
   ) {}
+=======
+  constructor(private readonly medicalRecordsService: MedicalRecordsService) {}
+>>>>>>> develop
 
   @Post()
   @Roles(ROL_NOMBRES.VETERINARIO)

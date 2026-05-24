@@ -22,6 +22,10 @@ import { users } from '../../../database/schema/auth/users.schema';
 import { vetSpecialties } from '../../../database/schema/vets/vet-specialties.schema';
 import { vets } from '../../../database/schema/vets/vets.schema';
 import {
+  CLIENT_REPOSITORY,
+  IClientRepository,
+} from '../../clients/repositories/client.repository.interface';
+import {
   IRoleRepository,
   ROLE_REPOSITORY,
 } from '../../users/role/repositories/role.repository.interface';
@@ -37,6 +41,10 @@ import {
   ISpecialtyRepository,
   SPECIALTY_REPOSITORY,
 } from '../../vets/specialties/repositories/specialty.repository.interface';
+import {
+  VET_REPOSITORY,
+  IVetRepository,
+} from '../../vets/vet/repositories/vet.repository.interface';
 import { LoginRequestDto } from '../dto/login-request.dto';
 import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
@@ -68,6 +76,12 @@ export class AuthService {
 
     @Inject(SPECIALTY_REPOSITORY)
     private readonly specialtyRepository: ISpecialtyRepository,
+
+    @Inject(CLIENT_REPOSITORY)
+    private readonly clientRepository: IClientRepository,
+
+    @Inject(VET_REPOSITORY)
+    private readonly vetRepository: IVetRepository,
 
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
@@ -114,6 +128,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(contrasena, 10);
 
     const user = await this.userRepository.create({
+      name: nombreCompleto,
       email: correo,
       password_hash: passwordHash,
     });
@@ -186,6 +201,7 @@ export class AuthService {
 
     const user = await this.db.transaction(async (tx) => {
       await tx.insert(users).values({
+        name: dto.nombreCompleto,
         email: dto.correo,
         password_hash: passwordHash,
       });
@@ -313,10 +329,12 @@ export class AuthService {
     res.clearCookie('verification_session');
 
     if (rolActivo?.role.name === ROL_NOMBRES.CLIENTE) {
+      const profileId = await this.getProfileId(user.id, rolActivo.role.name);
       const payload = {
         sub: user.id,
         email: user.email,
         rol: rolActivo.role.name,
+        profileId,
       };
       const token = this.jwtService.sign(payload);
       this.setSessionCookie(res, token);
@@ -344,6 +362,21 @@ export class AuthService {
     this.setVerificationCookie(res, user.id);
 
     return { message: 'Código de verificación reenviado correctamente' };
+  }
+
+  private async getProfileId(
+    userId: number,
+    rol: string,
+  ): Promise<number | null> {
+    if (rol === ROL_NOMBRES.CLIENTE) {
+      const client = await this.clientRepository.findByUserId(userId);
+      return client?.id ?? null;
+    }
+    if (rol === ROL_NOMBRES.VETERINARIO) {
+      const vet = await this.vetRepository.findByUserId(userId);
+      return vet?.id ?? null;
+    }
+    return null;
   }
 
   async login(dto: LoginRequestDto, rolEsperado: RolNombre, res: Response) {
@@ -385,10 +418,12 @@ export class AuthService {
       );
     }
 
+    const profileId = await this.getProfileId(user.id, rolActivo.role.name);
     const payload = {
       sub: user.id,
       email: user.email,
       rol: rolActivo.role.name,
+      profileId,
     };
 
     const token = this.jwtService.sign(payload);

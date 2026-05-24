@@ -8,6 +8,7 @@ export interface JwtPayload {
   sub: number;
   email: string;
   rol: string;
+  profileId: number | null;
 }
 
 interface RequestWithCookies extends Request {
@@ -38,6 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       id: payload.sub,
       email: payload.email,
       rol: payload.rol,
+      profileId: payload.profileId,
     };
   }
 }

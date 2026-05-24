@@ -89,6 +89,7 @@ export class UserService implements IUserService {
 
     return {
       id: baseDto.id,
+      name: baseDto.name,
       email: baseDto.email,
       email_verified_at: baseDto.email_verified_at,
       approved_at: baseDto.approved_at,
@@ -184,6 +185,7 @@ export class UserService implements IUserService {
 
     const updatedUserPayload: User = {
       id: user.id,
+      name: user.name,
       email: user.email,
       password_hash: user.password_hash,
       email_verified_at: user.email_verified_at,
@@ -225,6 +227,7 @@ export class UserService implements IUserService {
     }
 
     const newUserPayload: NewUser = {
+      name: createUserDto.name,
       email: createUserDto.email,
       password_hash: createUserDto.password,
     };
@@ -254,6 +257,7 @@ export class UserService implements IUserService {
 
     const updatedUserPayload: User = {
       id: user.id,
+      name: updateUserDto.name ?? user.name,
       email: updateUserDto.email ?? user.email,
       password_hash: updateUserDto.password ?? user.password_hash,
       email_verified_at: user.email_verified_at,

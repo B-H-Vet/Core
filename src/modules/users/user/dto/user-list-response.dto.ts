@@ -1,6 +1,7 @@
 export class UserListResponseDto {
   data!: {
     id: number;
+    name: string;
     email: string;
     email_verified_at: Date | null;
     approved_at: Date | null;

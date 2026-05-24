@@ -14,6 +14,13 @@ import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../auth/guards/roles.guard';
 import { UserService } from '../services/user.service';
 
+interface AuthenticatedUser {
+  id: number;
+  email: string;
+  rol: string;
+  profileId: number | null;
+}
+
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
@@ -41,8 +48,7 @@ export class UsersController {
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
   aprobarCuenta(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser()
-    user: { id: number; email: string; rol: string },
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.userService.aprobarCuenta(id, user.id);
   }
@@ -51,8 +57,7 @@ export class UsersController {
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
   desactivarCuenta(
     @Param('id', ParseIntPipe) id: number,
-    @CurrentUser()
-    user: { id: number; email: string; rol: string },
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.userService.desactivarCuenta(id, user.id);
   }
