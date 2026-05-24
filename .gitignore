@@ -59,6 +59,9 @@ pids
 *.seed
 *.pid.lock
 
+# Ignorar configuracion local de pnpm
+pnpm-workspace.yaml
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
