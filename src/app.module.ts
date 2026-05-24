@@ -11,6 +11,8 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { HospitalizationsModule } from './modules/hospitalizations/hospitalizations.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UsersModule } from './modules/users/users.module';
+import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -21,6 +23,7 @@ import { UsersModule } from './modules/users/users.module';
     UsersModule,
     ClientsModule,
     RedisModule,
+    MedicalRecordsModule,
     AppointmentsModule,
     NotificationsModule,
     HospitalizationsModule,
