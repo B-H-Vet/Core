@@ -11,5 +11,7 @@ export interface CreateMedicineDetailInput {
 
 export abstract class IMedicineDetailRepository {
   abstract createMany(data: CreateMedicineDetailInput[]): Promise<void>;
-  abstract findByMedicalRecordId(medicalRecordId: number): Promise<MedicineDetail[]>;
+  abstract findByMedicalRecordId(
+    medicalRecordId: number,
+  ): Promise<MedicineDetail[]>;
 }
