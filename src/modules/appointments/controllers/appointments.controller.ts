@@ -10,7 +10,9 @@ import {
   Query,
   UnauthorizedException,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import { CurrentUserPayload } from '../../../common/types/current-user.type';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -23,7 +25,6 @@ import { CompleteAppointmentDto } from '../dto/complete-appointment.dto';
 import { CreateAppointmentDto } from '../dto/create-appointment.dto';
 import { RescheduleAppointmentDto } from '../dto/reschedule-appointment.dto';
 import { AppointmentsService } from '../services/appointments.service';
-
 @Controller('appointments')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AppointmentsController {
@@ -90,8 +91,9 @@ export class AppointmentsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CompleteAppointmentDto,
     @CurrentUser() user: CurrentUserPayload,
+    @Req() req: Request,
   ) {
-    return this.appointmentsService.complete(id, user, dto);
+    return this.appointmentsService.complete(id, user, dto, req);
   }
 
   @Patch(':id/cancel')
