@@ -1,16 +1,16 @@
 import {
+  Body,
   Controller,
   DefaultValuePipe,
-  Get,
-  Post,
-  Patch,
   Delete,
-  Param,
-  Body,
-  Query,
-  ParseIntPipe,
-  UseGuards,
   ForbiddenException,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
 
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
@@ -29,36 +29,10 @@ interface AuthenticatedUser {
   profileId: number | null;
 }
 
-@Controller('clients')
+@Controller('pets')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PetsController {
   constructor(private readonly petsService: PetsService) {}
-  @Get(':clientId/pets')
-  @Roles(
-    ROL_NOMBRES.ADMINISTRADOR,
-    ROL_NOMBRES.RECEPCIONISTA,
-    ROL_NOMBRES.VETERINARIO,
-  )
-  findByClientId(
-    @Param('clientId', ParseIntPipe) clientId: number,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    if (user.rol === ROL_NOMBRES.CLIENTE && user.profileId !== clientId) {
-      throw new ForbiddenException('No tienes permiso para ver estas mascotas');
-    }
-    return this.petsService.findByClientId(clientId, { page, limit });
-  }
-
-  @Post(':clientId/pets')
-  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
-  create(
-    @Param('clientId', ParseIntPipe) clientId: number,
-    @Body() dto: CreatePetDto,
-  ) {
-    return this.petsService.create(clientId, dto);
-  }
 
   @Get()
   @Roles(
@@ -73,6 +47,19 @@ export class PetsController {
     return this.petsService.findAll({ page, limit });
   }
 
+  @Get('mine')
+  @Roles(ROL_NOMBRES.CLIENTE)
+  findMyPets(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    if (!user.profileId) {
+      throw new ForbiddenException('No tienes un perfil de cliente asociado');
+    }
+    return this.petsService.findByClientId(user.profileId, { page, limit });
+  }
+
   @Get(':id')
   @Roles(
     ROL_NOMBRES.ADMINISTRADOR,
@@ -85,10 +72,23 @@ export class PetsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const pet = await this.petsService.findById(id);
-    if (user.rol === ROL_NOMBRES.CLIENTE && pet.client.id !== user.profileId) {
-      throw new ForbiddenException('No tienes permiso para ver esta mascota');
+
+    if (user.rol === ROL_NOMBRES.CLIENTE) {
+      if (!user.profileId) {
+        throw new ForbiddenException('No tienes un perfil de cliente asociado');
+      }
+      if (pet.client.id !== user.profileId) {
+        throw new ForbiddenException('No tienes permiso para ver esta mascota');
+      }
     }
+
     return pet;
+  }
+
+  @Post()
+  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.RECEPCIONISTA)
+  create(@Body() dto: CreatePetDto) {
+    return this.petsService.create(dto.clientId, dto);
   }
 
   @Patch(':id')

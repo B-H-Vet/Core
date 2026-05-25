@@ -92,7 +92,6 @@ export class UserService implements IUserService {
       name: baseDto.name,
       email: baseDto.email,
       email_verified_at: baseDto.email_verified_at,
-      approved_at: baseDto.approved_at,
       created_at: baseDto.created_at,
       updated_at: user.updated_at,
       rol: baseDto.rol,
@@ -120,11 +119,14 @@ export class UserService implements IUserService {
     for (const u of users) {
       const userRoles = await this.userRoleRepository.findByUserId(u.id);
       const rolActivo = userRoles.find((ur) => !ur.revoked_at);
+      if (!rolActivo) {
+        continue;
+      }
 
       if (
         u.email_verified_at !== null &&
-        u.approved_at === null &&
-        rolActivo?.role.requires_approval === true
+        rolActivo.approved_at === null &&
+        rolActivo.role.requires_approval
       ) {
         pendientes.push(UserMapper.toDto(u, userRoles));
       }
@@ -182,19 +184,6 @@ export class UserService implements IUserService {
       approved_at: approvedAt,
       approved_by: adminId,
     });
-
-    const updatedUserPayload: User = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      password_hash: user.password_hash,
-      email_verified_at: user.email_verified_at,
-      approved_at: approvedAt,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      deleted_at: user.deleted_at,
-    };
-    await this.userRepository.update(updatedUserPayload);
 
     return {
       message: 'La cuenta ha sido aprobada correctamente',
@@ -261,7 +250,6 @@ export class UserService implements IUserService {
       email: updateUserDto.email ?? user.email,
       password_hash: updateUserDto.password ?? user.password_hash,
       email_verified_at: user.email_verified_at,
-      approved_at: user.approved_at,
       created_at: user.created_at,
       updated_at: user.updated_at,
       deleted_at: user.deleted_at,

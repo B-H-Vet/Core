@@ -5,7 +5,7 @@ import { MeasurementUnitsModule } from '../measurement-units/measurement-units.m
 
 import { SuppliesController } from './controllers/supplies.controller';
 import { SupplyRepository } from './repositories/supply.repository';
-import { SUPPLY_REPOSITORY } from './repositories/supply.repository.interface';
+import { ISupplyRepository } from './repositories/supply.repository.interface';
 import { SuppliesService } from './services/supplies.service';
 
 @Module({
@@ -14,10 +14,10 @@ import { SuppliesService } from './services/supplies.service';
   providers: [
     SuppliesService,
     {
-      provide: SUPPLY_REPOSITORY,
+      provide: ISupplyRepository,
       useClass: SupplyRepository,
     },
   ],
-  exports: [SuppliesService, SUPPLY_REPOSITORY],
+  exports: [SuppliesService, ISupplyRepository],
 })
 export class SuppliesModule {}

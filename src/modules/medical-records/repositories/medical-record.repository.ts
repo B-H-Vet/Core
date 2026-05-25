@@ -65,6 +65,8 @@ export class MedicalRecordRepository extends IMedicalRecordRepository {
         created_at: medicalRecords.created_at,
         updated_at: medicalRecords.updated_at,
         pet_id: appointments.pet_id,
+        client_id: appointments.client_id,
+        vet_id: appointments.vet_id,
       })
       .from(medicalRecords)
       .innerJoin(
@@ -88,6 +90,8 @@ export class MedicalRecordRepository extends IMedicalRecordRepository {
         created_at: medicalRecords.created_at,
         updated_at: medicalRecords.updated_at,
         pet_id: appointments.pet_id,
+        client_id: appointments.client_id,
+        vet_id: appointments.vet_id,
       })
       .from(medicalRecords)
       .innerJoin(
@@ -113,6 +117,8 @@ export class MedicalRecordRepository extends IMedicalRecordRepository {
         created_at: medicalRecords.created_at,
         updated_at: medicalRecords.updated_at,
         pet_id: appointments.pet_id,
+        client_id: appointments.client_id,
+        vet_id: appointments.vet_id,
       })
       .from(medicalRecords)
       .innerJoin(

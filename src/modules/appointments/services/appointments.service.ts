@@ -1,16 +1,21 @@
 import { randomInt, randomUUID } from 'crypto';
 
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
-import { RolNombre } from '../../../database/schema/auth/roles.schema';
+import {
+  BadRequestBusinessException,
+  ConflictBusinessException,
+  ForbiddenBusinessException,
+  NotFoundBusinessException,
+} from '../../../common/exceptions';
+import { CurrentUserPayload } from '../../../common/types/current-user.type';
+import { CreateMedicalRecordDto } from '../../medical-records/dto/create-medical-record.dto';
+import { MedicalRecordsService } from '../../medical-records/services/medical-records.service';
 import { EmailService } from '../../notifications/services/email.service';
+import {
+  IPetRepository,
+  PET_REPOSITORY,
+} from '../../pets/repositories/pet.repository.interface';
 import {
   IServiceRepository,
   SERVICE_REPOSITORY,
@@ -22,13 +27,19 @@ import {
 import { AppointmentDetailResponseDto } from '../dto/appointment-detail-response.dto';
 import { AppointmentResponseDto } from '../dto/appointment-response.dto';
 import { CancelAppointmentDto } from '../dto/cancel-appointment.dto';
+import { CompleteAppointmentDto } from '../dto/complete-appointment.dto';
 import { CreateAppointmentDto } from '../dto/create-appointment.dto';
 import { PendingAppointmentResponseDto } from '../dto/pending-appointment-response.dto';
+import { PendingInvoiceAppointmentResponseDto } from '../dto/pending-invoice-appointment-response.dto';
 import { RescheduleAppointmentDto } from '../dto/reschedule-appointment.dto';
 import {
   APPOINTMENT_INFO_REPOSITORY,
   IAppointmentInfoRepository,
 } from '../repositories/appointment-info.repository.interface';
+import {
+  APPOINTMENT_INVOICE_QUERY_REPOSITORY,
+  IAppointmentInvoiceQueryRepository,
+} from '../repositories/appointment-invoice-query.repository.interface';
 import {
   APPOINTMENT_SERVICE_REPOSITORY,
   IAppointmentServiceRepository,
@@ -44,12 +55,6 @@ import {
   PendingAppointmentData,
 } from './appointment-redis.service';
 
-export interface CurrentUserPayload {
-  id: number;
-  email: string;
-  rol: RolNombre;
-}
-
 @Injectable()
 export class AppointmentsService {
   constructor(
@@ -62,14 +67,22 @@ export class AppointmentsService {
     @Inject(APPOINTMENT_INFO_REPOSITORY)
     private readonly appointmentInfoRepository: IAppointmentInfoRepository,
 
+    @Inject(APPOINTMENT_INVOICE_QUERY_REPOSITORY)
+    private readonly appointmentInvoiceQueryRepository: IAppointmentInvoiceQueryRepository,
+
     @Inject(SERVICE_REPOSITORY)
     private readonly serviceRepository: IServiceRepository,
 
     @Inject(VET_REPOSITORY)
     private readonly vetRepository: IVetRepository,
 
+    @Inject(PET_REPOSITORY)
+    private readonly petRepository: IPetRepository,
+
     private readonly emailService: EmailService,
     private readonly appointmentRedisService: AppointmentRedisService,
+
+    private readonly medicalRecordsService: MedicalRecordsService,
   ) {}
 
   private async getAppointmentTotal(appointmentId: number): Promise<number> {
@@ -99,15 +112,16 @@ export class AppointmentsService {
   }
 
   private async verifyOwnership(
-    appointment: { user_id: number; vet_id: number },
+    appointment: { client_id: number; vet_id: number },
     user: CurrentUserPayload,
   ): Promise<void> {
     if (user.rol === 'ADMINISTRADOR' || user.rol === 'RECEPCIONISTA') {
       return;
     }
 
-    if (user.rol === 'CLIENTE' && appointment.user_id !== user.id) {
-      throw new ForbiddenException(
+    if (user.rol === 'CLIENTE' && appointment.client_id !== user.profileId) {
+      throw new ForbiddenBusinessException(
+        'FORBIDDEN_RESOURCE',
         'No tienes permisos para acceder a esta cita',
       );
     }
@@ -115,26 +129,35 @@ export class AppointmentsService {
     if (user.rol === 'VETERINARIO') {
       const vet = await this.vetRepository.findByUserId(user.id);
       if (vet?.id !== appointment.vet_id) {
-        throw new ForbiddenException(
+        throw new ForbiddenBusinessException(
+          'FORBIDDEN_RESOURCE',
           'No tienes permisos para acceder a esta cita',
         );
       }
     }
   }
 
-  private resolveClientUserId(
+  private resolveClientId(
     dto: CreateAppointmentDto,
     user: CurrentUserPayload,
   ): number {
     if (user.rol === 'CLIENTE') {
-      return user.id;
+      if (!user.profileId) {
+        throw new ForbiddenBusinessException(
+          'CLIENT_PROFILE_MISSING',
+          'No tienes un perfil de cliente asociado',
+        );
+      }
+      return user.profileId;
     }
-    if (!dto.user_id) {
-      throw new BadRequestException(
-        'Debe proporcionar el user_id del cliente para agendar la cita',
+    if (!dto.client_id) {
+      throw new BadRequestBusinessException(
+        'MISSING_CLIENT_ID',
+        'Debe proporcionar el client_id del cliente para agendar la cita',
+        [{ field: 'client_id', message: 'El campo es requerido' }],
       );
     }
-    return dto.user_id;
+    return dto.client_id;
   }
 
   private buildConfirmLink(token: string): string {
@@ -154,16 +177,62 @@ export class AppointmentsService {
     return end;
   }
 
+  private isWithinBusinessHours(date: Date): boolean {
+    const businessDays = process.env.BUSINESS_DAYS?.split(',').map(Number) ?? [
+      1, 2, 3, 4, 5,
+    ];
+    const startHour = Number(process.env.BUSINESS_HOURS_START ?? '7');
+    const endHour = Number(process.env.BUSINESS_HOURS_END ?? '19');
+
+    const day = date.getDay();
+    const hour = date.getHours();
+
+    return businessDays.includes(day) && hour >= startHour && hour < endHour;
+  }
+
   async create(
     dto: CreateAppointmentDto,
     user: CurrentUserPayload,
   ): Promise<PendingAppointmentResponseDto> {
-    const clientUserId = this.resolveClientUserId(dto, user);
+    const clientId = this.resolveClientId(dto, user);
     const appointmentDate = new Date(dto.date);
 
     if (appointmentDate <= new Date()) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'INVALID_APPOINTMENT_DATE',
         'La fecha de la cita debe ser posterior a la fecha actual',
+        [{ field: 'date', message: 'La fecha debe ser posterior a la actual' }],
+      );
+    }
+
+    if (!this.isWithinBusinessHours(appointmentDate)) {
+      throw new BadRequestBusinessException(
+        'OUTSIDE_BUSINESS_HOURS',
+        'La cita debe agendarse dentro del horario de atención (Lunes a Viernes, 7:00 a.m. – 7:00 p.m.)',
+        [
+          {
+            field: 'date',
+            message:
+              'Horario fuera de la ventana de atención (Lunes a Viernes, 7:00 a.m. – 7:00 p.m.)',
+          },
+        ],
+      );
+    }
+
+    const pet = await this.petRepository.findById(dto.pet_id);
+
+    if (!pet) {
+      throw new NotFoundBusinessException(
+        'PET_NOT_FOUND',
+        'La mascota ingresada no fue encontrada',
+        { pet_id: dto.pet_id },
+      );
+    }
+
+    if (pet.client.id !== clientId) {
+      throw new ForbiddenBusinessException(
+        'PET_NOT_BELONGS_TO_CLIENT',
+        'La mascota no pertenece al cliente seleccionado',
       );
     }
 
@@ -172,8 +241,10 @@ export class AppointmentsService {
     );
 
     if (services.length !== dto.service_ids.length) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'SERVICES_NOT_FOUND',
         'Uno o más servicios no existen o están inactivos',
+        [{ field: 'service_ids', message: 'Uno o más servicios no existen' }],
       );
     }
 
@@ -189,7 +260,8 @@ export class AppointmentsService {
     );
 
     if (total <= 0) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'INVALID_TOTAL_AMOUNT',
         'El valor total de la cita debe ser mayor a cero',
       );
     }
@@ -201,7 +273,8 @@ export class AppointmentsService {
     );
 
     if (conflict) {
-      throw new ConflictException(
+      throw new ConflictBusinessException(
+        'APPOINTMENT_CONFLICT',
         'El veterinario ya tiene una cita agendada en ese horario',
       );
     }
@@ -210,7 +283,7 @@ export class AppointmentsService {
     const invoiceNumber = this.generateInvoiceNumber();
 
     const pendingData: PendingAppointmentData = {
-      user_id: clientUserId,
+      client_id: clientId,
       vet_id: dto.vet_id,
       pet_id: dto.pet_id,
       date: appointmentDate.toISOString(),
@@ -228,13 +301,14 @@ export class AppointmentsService {
 
     const emailInfo =
       await this.appointmentInfoRepository.getAppointmentEmailInfo({
-        userId: clientUserId,
+        clientId: clientId,
         petId: dto.pet_id,
         vetId: dto.vet_id,
       });
 
     if (!emailInfo) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'MISSING_CONFIRMATION_DATA',
         'No se encontraron los datos necesarios para enviar la confirmación de la cita',
       );
     }
@@ -299,7 +373,8 @@ export class AppointmentsService {
       await this.appointmentRedisService.getPendingAppointment(token);
 
     if (!pendingData) {
-      throw new NotFoundException(
+      throw new NotFoundBusinessException(
+        'TOKEN_NOT_FOUND',
         'El token de confirmación ha expirado o no es válido. Por favor, solicite una nueva cita.',
       );
     }
@@ -314,7 +389,8 @@ export class AppointmentsService {
     );
 
     if (conflict) {
-      throw new ConflictException(
+      throw new ConflictBusinessException(
+        'APPOINTMENT_CONFLICT',
         'El horario seleccionado ya no está disponible porque fue confirmado por otro pago. Por favor, seleccione otro horario.',
       );
     }
@@ -324,13 +400,15 @@ export class AppointmentsService {
     );
 
     if (services.length !== pendingData.service_ids.length) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'SERVICES_NOT_FOUND',
         'Uno o más servicios seleccionados ya no están disponibles.',
+        [{ field: 'service_ids', message: 'Servicios no disponibles' }],
       );
     }
 
     const appointment = await this.appointmentRepository.create({
-      user_id: pendingData.user_id,
+      client_id: pendingData.client_id,
       vet_id: pendingData.vet_id,
       pet_id: pendingData.pet_id,
       date: appointmentDate,
@@ -351,7 +429,7 @@ export class AppointmentsService {
 
     const emailInfo =
       await this.appointmentInfoRepository.getAppointmentEmailInfo({
-        userId: appointment.user_id,
+        clientId: appointment.client_id,
         petId: appointment.pet_id,
         vetId: appointment.vet_id,
       });
@@ -373,7 +451,7 @@ export class AppointmentsService {
 
     return {
       id: appointment.id,
-      user_id: appointment.user_id,
+      client_id: appointment.client_id,
       vet_id: appointment.vet_id,
       pet_id: appointment.pet_id,
       date: appointment.date,
@@ -407,14 +485,26 @@ export class AppointmentsService {
     let total: number;
 
     if (user.rol === 'CLIENTE') {
+      if (!user.profileId) {
+        throw new ForbiddenBusinessException(
+          'CLIENT_PROFILE_MISSING',
+          'No tienes un perfil de cliente asociado',
+        );
+      }
       [appointmentsList, total] = await Promise.all([
-        this.appointmentRepository.findByClientUserId(user.id, { page, limit }),
-        this.appointmentRepository.countByClientUserId(user.id),
+        this.appointmentRepository.findByClientId(user.profileId, {
+          page,
+          limit,
+        }),
+        this.appointmentRepository.countByClientId(user.profileId),
       ]);
     } else if (user.rol === 'VETERINARIO') {
       const vet = await this.vetRepository.findByUserId(user.id);
       if (!vet) {
-        throw new ForbiddenException('Veterinario no encontrado');
+        throw new ForbiddenBusinessException(
+          'VET_NOT_FOUND',
+          'Veterinario no encontrado',
+        );
       }
       [appointmentsList, total] = await Promise.all([
         this.appointmentRepository.findByVetId(vet.id, { page, limit }),
@@ -430,7 +520,7 @@ export class AppointmentsService {
     const data = await Promise.all(
       appointmentsList.map(async (appointment) => ({
         id: appointment.id,
-        user_id: appointment.user_id,
+        client_id: appointment.client_id,
         vet_id: appointment.vet_id,
         pet_id: appointment.pet_id,
         date: appointment.date,
@@ -461,7 +551,11 @@ export class AppointmentsService {
     const appointment = await this.appointmentRepository.findById(id);
 
     if (!appointment) {
-      throw new NotFoundException('La cita ingresada no fue encontrada');
+      throw new NotFoundBusinessException(
+        'APPOINTMENT_NOT_FOUND',
+        'La cita ingresada no fue encontrada',
+        { appointment_id: id },
+      );
     }
 
     await this.verifyOwnership(appointment, user);
@@ -476,7 +570,7 @@ export class AppointmentsService {
 
     return {
       id: appointment.id,
-      user_id: appointment.user_id,
+      client_id: appointment.client_id,
       vet_id: appointment.vet_id,
       pet_id: appointment.pet_id,
       date: appointment.date,
@@ -494,25 +588,93 @@ export class AppointmentsService {
     };
   }
 
+  async findPendingInvoice(pagination: PaginationParams): Promise<{
+    data: PendingInvoiceAppointmentResponseDto[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+
+    const [rows, total] = await Promise.all([
+      this.appointmentInvoiceQueryRepository.findPendingInvoice({
+        page,
+        limit,
+      }),
+      this.appointmentInvoiceQueryRepository.countPendingInvoice(),
+    ]);
+
+    const data = rows.map((row) => ({
+      id: row.id,
+      date: row.date,
+      end_date: row.end_date,
+      client_name: row.client_name,
+      pet_name: row.pet_name,
+      vet_name: row.vet_name,
+      service_total: row.service_total,
+      has_prescribed_medicines: row.has_prescribed_medicines,
+    }));
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async complete(
     id: number,
     user: CurrentUserPayload,
+    dto: CompleteAppointmentDto,
   ): Promise<AppointmentDetailResponseDto> {
     const appointment = await this.appointmentRepository.findById(id);
 
     if (!appointment) {
-      throw new NotFoundException('La cita ingresada no fue encontrada');
+      throw new NotFoundBusinessException(
+        'APPOINTMENT_NOT_FOUND',
+        'La cita ingresada no fue encontrada',
+        { appointment_id: id },
+      );
     }
 
     await this.verifyOwnership(appointment, user);
 
     if (appointment.status === 'CANCELADA') {
-      throw new BadRequestException('No se puede finalizar una cita cancelada');
+      throw new BadRequestBusinessException(
+        'APPOINTMENT_ALREADY_CANCELLED',
+        'No se puede finalizar una cita cancelada',
+      );
     }
 
     if (appointment.status === 'ATENDIDA') {
-      throw new BadRequestException('La cita ya se encuentra finalizada');
+      throw new BadRequestBusinessException(
+        'APPOINTMENT_ALREADY_COMPLETED',
+        'La cita ya se encuentra finalizada',
+      );
     }
+
+    const medicalRecordDto: CreateMedicalRecordDto = {
+      appointment_id: id,
+      visit_reason: dto.visit_reason ?? '',
+      diagnosis: dto.diagnosis ?? '',
+      treatment: dto.treatment ?? '',
+      weight_at_visit: dto.weight_at_visit,
+      ...(dto.next_visit_date !== undefined && {
+        next_visit_date: dto.next_visit_date,
+      }),
+      ...(dto.medicines !== undefined && { medicines: dto.medicines }),
+      ...(dto.vaccines !== undefined && { vaccines: dto.vaccines }),
+    };
+
+    await this.medicalRecordsService.create(medicalRecordDto);
 
     const updated = await this.appointmentRepository.updateStatus({
       id,
@@ -530,19 +692,27 @@ export class AppointmentsService {
     const appointment = await this.appointmentRepository.findById(id);
 
     if (!appointment) {
-      throw new NotFoundException('La cita ingresada no fue encontrada');
+      throw new NotFoundBusinessException(
+        'APPOINTMENT_NOT_FOUND',
+        'La cita ingresada no fue encontrada',
+        { appointment_id: id },
+      );
     }
 
     await this.verifyOwnership(appointment, user);
 
     if (appointment.status === 'ATENDIDA') {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'APPOINTMENT_ALREADY_COMPLETED',
         'No se puede cancelar una cita ya finalizada',
       );
     }
 
     if (appointment.status === 'CANCELADA') {
-      throw new BadRequestException('La cita ya se encuentra cancelada');
+      throw new BadRequestBusinessException(
+        'APPOINTMENT_ALREADY_CANCELLED',
+        'La cita ya se encuentra cancelada',
+      );
     }
 
     const updated = await this.appointmentRepository.updateStatus({
@@ -551,6 +721,26 @@ export class AppointmentsService {
       cancel_reason: dto.reason,
       canceled_at: new Date(),
     });
+
+    const cancelEmailInfo =
+      await this.appointmentInfoRepository.getAppointmentEmailInfo({
+        clientId: appointment.client_id,
+        petId: appointment.pet_id,
+        vetId: appointment.vet_id,
+      });
+
+    if (cancelEmailInfo) {
+      await this.emailService.sendCancellationNotification({
+        to: cancelEmailInfo.clientEmail,
+        petName: cancelEmailInfo.petName,
+        vetName: cancelEmailInfo.vetName,
+        appointmentDate: appointment.date,
+        clinicAddress:
+          process.env.CLINIC_ADDRESS ??
+          'Sede principal Breaze & Harold Veterinary System',
+        cancelReason: dto.reason,
+      });
+    }
 
     return this.findById(updated.id, user);
   }
@@ -563,26 +753,55 @@ export class AppointmentsService {
     const appointment = await this.appointmentRepository.findById(id);
 
     if (!appointment) {
-      throw new NotFoundException('La cita ingresada no fue encontrada');
+      throw new NotFoundBusinessException(
+        'APPOINTMENT_NOT_FOUND',
+        'La cita ingresada no fue encontrada',
+        { appointment_id: id },
+      );
     }
 
     await this.verifyOwnership(appointment, user);
 
     if (appointment.status === 'ATENDIDA') {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'APPOINTMENT_ALREADY_COMPLETED',
         'No se puede reagendar una cita ya finalizada',
       );
     }
 
     if (appointment.status === 'CANCELADA') {
-      throw new BadRequestException('No se puede reagendar una cita cancelada');
+      throw new BadRequestBusinessException(
+        'APPOINTMENT_ALREADY_CANCELLED',
+        'No se puede reagendar una cita cancelada',
+      );
     }
 
     const newDate = new Date(dto.date);
 
     if (newDate <= new Date()) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'INVALID_RESCHEDULE_DATE',
         'La nueva fecha debe ser posterior a la fecha actual',
+        [
+          {
+            field: 'date',
+            message: 'La nueva fecha debe ser posterior a la actual',
+          },
+        ],
+      );
+    }
+
+    if (!this.isWithinBusinessHours(newDate)) {
+      throw new BadRequestBusinessException(
+        'OUTSIDE_BUSINESS_HOURS',
+        'La cita debe reagendarse dentro del horario de atención (Lunes a Viernes, 7:00 a.m. – 7:00 p.m.)',
+        [
+          {
+            field: 'date',
+            message:
+              'Horario fuera de la ventana de atención (Lunes a Viernes, 7:00 a.m. – 7:00 p.m.)',
+          },
+        ],
       );
     }
 
@@ -597,7 +816,8 @@ export class AppointmentsService {
     );
 
     if (conflict) {
-      throw new ConflictException(
+      throw new ConflictBusinessException(
+        'APPOINTMENT_CONFLICT',
         'El veterinario ya tiene una cita agendada en ese horario',
       );
     }
@@ -622,7 +842,8 @@ export class AppointmentsService {
     deleted_at: Date;
   }> {
     if (user.rol !== 'ADMINISTRADOR') {
-      throw new ForbiddenException(
+      throw new ForbiddenBusinessException(
+        'FORBIDDEN_RESOURCE',
         'Solo un administrador puede eliminar citas',
       );
     }
@@ -630,7 +851,11 @@ export class AppointmentsService {
     const appointment = await this.appointmentRepository.findById(id);
 
     if (!appointment) {
-      throw new NotFoundException('La cita ingresada no fue encontrada');
+      throw new NotFoundBusinessException(
+        'APPOINTMENT_NOT_FOUND',
+        'La cita ingresada no fue encontrada',
+        { appointment_id: id },
+      );
     }
 
     await this.appointmentServiceRepository.softDeleteByAppointmentId(id);

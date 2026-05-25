@@ -4,20 +4,20 @@ import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import type { RolNombre } from '../../../database/schema/auth/roles.schema';
 
 export class RegisterRequestDto {
-  @IsString({ message: 'El nombre ingresado debe ser texto' })
-  nombreCompleto!: string;
+  @IsString({ message: 'The entered name must be text' })
+  fullName!: string;
 
-  @IsEmail({}, { message: 'El correo ingresado no tiene un formato válido' })
-  correo!: string;
+  @IsEmail({}, { message: 'The entered email does not have a valid format' })
+  email!: string;
 
   @IsString()
   @MinLength(8, {
-    message: 'La contraseña ingresada debe tener al menos 8 caracteres',
+    message: 'The entered password must be at least 8 characters long',
   })
-  contrasena!: string;
+  password!: string;
 
   @IsIn(Object.values(ROL_NOMBRES), {
-    message: 'El rol ingresado no es válido',
+    message: 'The entered role is not valid',
   })
-  rol!: RolNombre;
+  role!: RolNombre;
 }

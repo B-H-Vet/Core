@@ -20,13 +20,11 @@ export abstract class IUserRoleService {
     assignRoleDto: AssignRoleDto,
   ): Promise<AssignRoleResponseDto>;
   abstract revokeRole(
-    userId: number,
-    roleId: number,
+    userRoleId: number,
     revokedBy: number,
   ): Promise<RevokeRoleResponseDto>;
   abstract approveRole(
-    userId: number,
-    roleId: number,
+    userRoleId: number,
     approvedBy: number,
   ): Promise<ApproveRoleResponseDto>;
 }

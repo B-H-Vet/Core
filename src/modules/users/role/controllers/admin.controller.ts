@@ -25,7 +25,7 @@ export class AdminController {
     @CurrentUser()
     user: { id: number; email: string; rol: string },
   ) {
-    return this.userRoleService.approveRole(id, user.id, user.id);
+    return this.userRoleService.approveRole(id, user.id);
   }
 
   @Patch(':id/revoke')
@@ -34,6 +34,6 @@ export class AdminController {
     @CurrentUser()
     user: { id: number; email: string; rol: string },
   ) {
-    return this.userRoleService.revokeRole(id, user.id, user.id);
+    return this.userRoleService.revokeRole(id, user.id);
   }
 }

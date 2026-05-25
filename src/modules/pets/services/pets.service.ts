@@ -132,10 +132,10 @@ export class PetsService {
       client: { id: client.id },
       name: dto.name,
       species: dto.species,
-      breed: dto.breed ?? null,
-      color: dto.color ?? null,
+      breed: dto.breed,
+      color: dto.color,
       birth_date: dto.birth_date ?? null,
-      weight: dto.weight ?? null,
+      weight: dto.weight,
     });
 
     return {

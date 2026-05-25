@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 import { RedisService } from '../../../common/redis/services/redis.service';
 
 export interface PendingAppointmentData {
-  user_id: number;
+  client_id: number;
   vet_id: number;
   pet_id: number;
   date: string;

@@ -4,7 +4,8 @@ export const MEDICINE_DETAIL_REPOSITORY = 'MEDICINE_DETAIL_REPOSITORY';
 
 export interface CreateMedicineDetailInput {
   medical_record_id: number;
-  supply_id: number;
+  supply_id: number | null;
+  quantity: number;
   dose: string;
   duration: string;
 }

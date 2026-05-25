@@ -28,7 +28,7 @@ export class AppointmentRepository extends IAppointmentRepository {
 
   async create(data: CreateAppointmentInput): Promise<Appointment> {
     await this.db.insert(appointments).values({
-      user_id: data.user_id,
+      client_id: data.client_id,
       vet_id: data.vet_id,
       pet_id: data.pet_id,
       date: data.date,
@@ -81,8 +81,8 @@ export class AppointmentRepository extends IAppointmentRepository {
       .offset(offset);
   }
 
-  async findByClientUserId(
-    userId: number,
+  async findByClientId(
+    clientId: number,
     pagination: PaginationParams,
   ): Promise<Appointment[]> {
     const page = pagination.page ?? 1;
@@ -93,7 +93,10 @@ export class AppointmentRepository extends IAppointmentRepository {
       .select()
       .from(appointments)
       .where(
-        and(eq(appointments.user_id, userId), isNull(appointments.deleted_at)),
+        and(
+          eq(appointments.client_id, clientId),
+          isNull(appointments.deleted_at),
+        ),
       )
       .limit(limit)
       .offset(offset);
@@ -126,12 +129,15 @@ export class AppointmentRepository extends IAppointmentRepository {
     return result[0]?.value ?? 0;
   }
 
-  async countByClientUserId(userId: number): Promise<number> {
+  async countByClientId(clientId: number): Promise<number> {
     const result = await this.db
       .select({ value: count() })
       .from(appointments)
       .where(
-        and(eq(appointments.user_id, userId), isNull(appointments.deleted_at)),
+        and(
+          eq(appointments.client_id, clientId),
+          isNull(appointments.deleted_at),
+        ),
       );
 
     return result[0]?.value ?? 0;

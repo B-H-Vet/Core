@@ -10,7 +10,7 @@ export interface AppointmentEmailInfo {
 
 export abstract class IAppointmentInfoRepository {
   abstract getAppointmentEmailInfo(data: {
-    userId: number;
+    clientId: number;
     petId: number;
     vetId: number;
   }): Promise<AppointmentEmailInfo | null>;

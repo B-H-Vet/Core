@@ -1,17 +1,19 @@
 import { randomInt } from 'crypto';
 
-import {
-  Inject,
-  Injectable,
-  BadRequestException,
-  UnauthorizedException,
-  ConflictException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { Response } from 'express';
 
+import {
+  BadRequestBusinessException,
+  ConflictBusinessException,
+  InternalServerBusinessException,
+  NotFoundBusinessException,
+  UnauthorizedBusinessException,
+} from '../../../common/exceptions';
+import { RequestWithCookies } from '../../../common/types/express.types';
 import { DATABASE_CONNECTION } from '../../../database/database.module';
 import type { Database } from '../../../database/database.module';
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
@@ -46,17 +48,25 @@ import {
   IVetRepository,
 } from '../../vets/vet/repositories/vet.repository.interface';
 import { LoginRequestDto } from '../dto/login-request.dto';
+import { LoginUserSummaryDto } from '../dto/login-user-summary.dto';
+import { RegisterAdminRequestDto } from '../dto/register-admin-request.dto';
 import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
 import { RegisterVetDto } from '../dto/register-vet.dto';
+import { LoginAdminResponseDto } from '../dto/responses/login-admin-response.dto';
+import { LoginClientResponseDto } from '../dto/responses/login-client-response.dto';
+import { LoginReceptionistResponseDto } from '../dto/responses/login-receptionist-response.dto';
+import { LoginVetResponseDto } from '../dto/responses/login-vet-response.dto';
+import { RegisterAdminRequestResponseDto } from '../dto/responses/register-admin-request-response.dto';
+import { RegisterClientResponseDto } from '../dto/responses/register-client-response.dto';
+import { RegisterReceptionistResponseDto } from '../dto/responses/register-receptionist-response.dto';
+import { RegisterVetResponseDto } from '../dto/responses/register-vet-response.dto';
+import { ResendVerificationResponseDto } from '../dto/responses/resend-verification-response.dto';
+import { VerifyEmailResponseDto } from '../dto/responses/verify-email-response.dto';
 import { VerifyCodeRequestDto } from '../dto/verify-code-request.dto';
 
 import { AuthMailService } from './auth-mail.service';
 import { AuthRedisService } from './auth-redis.service';
-
-interface RequestWithCookies {
-  cookies: Record<string, string | undefined>;
-}
 
 @Injectable()
 export class AuthService {
@@ -93,137 +103,183 @@ export class AuthService {
       httpOnly: true,
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
-      path: '/api',
     });
   }
 
-  private setSessionCookie(res: Response, token: string) {
-    res.cookie('session_token', token, {
+  private setAccessTokenCookie(res: Response, token: string) {
+    res.cookie('access_token', token, {
       httpOnly: true,
       sameSite: 'strict',
       maxAge: 60 * 60 * 1000,
-      path: '/api',
     });
   }
 
+  private setRefreshTokenCookie(res: Response, tokenId: string) {
+    res.cookie('refresh_token', tokenId, {
+      httpOnly: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  private clearAuthCookies(res: Response) {
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    res.clearCookie('verification_session');
+  }
+
   private async registerUser(
-    nombreCompleto: string,
-    correo: string,
-    contrasena: string,
-    rolNombre: RolNombre,
+    fullName: string,
+    email: string,
+    password: string,
+    roleName: RolNombre,
     res: Response,
   ) {
-    const usuarioExistente = await this.userRepository.findByEmail(correo);
-    if (usuarioExistente) {
-      throw new ConflictException('El correo ingresado ya está registrado');
+    const existingUser = await this.userRepository.findByEmail(email);
+    if (existingUser) {
+      throw new ConflictBusinessException(
+        'EMAIL_ALREADY_REGISTERED',
+        'The entered email is already registered',
+      );
     }
 
-    const rol = await this.roleRepository.findByName(rolNombre);
-    if (!rol) {
-      throw new BadRequestException('El rol ingresado no existe');
+    const role = await this.roleRepository.findByName(roleName);
+    if (!role) {
+      throw new NotFoundBusinessException(
+        'ROLE_NOT_FOUND',
+        'The entered role does not exist',
+      );
     }
 
-    const codigo = randomInt(100000, 999999).toString();
+    const code = randomInt(100000, 999999).toString();
 
-    const passwordHash = await bcrypt.hash(contrasena, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const user = await this.userRepository.create({
-      name: nombreCompleto,
-      email: correo,
+      name: fullName,
+      email,
       password_hash: passwordHash,
     });
 
     if (!user) {
-      throw new ConflictException('Error al crear el usuario');
+      throw new InternalServerBusinessException(
+        'USER_CREATION_FAILED',
+        'Failed to create user',
+      );
     }
 
-    if (!rol.id) {
-      throw new BadRequestException('El rol no tiene un id válido');
+    if (!role.id) {
+      throw new BadRequestBusinessException(
+        'ROLE_INVALID_ID',
+        'The role does not have a valid id',
+      );
     }
 
-    await this.authRedisService.saveVerificationCode(user.id, codigo);
+    await this.authRedisService.saveVerificationCode(user.id, code);
 
-    await this.userRoleRepository.create({ user, role: rol });
+    await this.userRoleRepository.create({ user, role });
 
-    await this.authMailService.sendVerificationCode(
-      correo,
-      nombreCompleto,
-      codigo,
-    );
+    await this.authMailService.sendVerificationCode(email, fullName, code);
 
     this.setVerificationCookie(res, user.id);
 
     return user;
   }
 
-  async registerClient(dto: RegisterClientDto, res: Response) {
-    await this.registerUser(
-      dto.nombreCompleto,
-      dto.correo,
-      dto.contrasena,
+  async registerClient(
+    dto: RegisterClientDto,
+    res: Response,
+  ): Promise<RegisterClientResponseDto> {
+    const user = await this.registerUser(
+      dto.fullName,
+      dto.email,
+      dto.password,
       ROL_NOMBRES.CLIENTE,
       res,
     );
+
+    await this.clientRepository.create({
+      user: { id: user.id },
+      phone: dto.phone,
+      ...(dto.address !== undefined && { address: dto.address }),
+    });
+
     return {
       message:
-        'El cliente fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
+        'The client was registered successfully. Check your email to verify your account',
     };
   }
 
-  async registerVet(dto: RegisterVetDto, res: Response) {
-    const usuarioExistente = await this.userRepository.findByEmail(dto.correo);
-    if (usuarioExistente) {
-      throw new ConflictException('El correo ingresado ya está registrado');
+  async registerVet(
+    dto: RegisterVetDto,
+    res: Response,
+  ): Promise<RegisterVetResponseDto> {
+    const existingUser = await this.userRepository.findByEmail(dto.email);
+    if (existingUser) {
+      throw new ConflictBusinessException(
+        'EMAIL_ALREADY_REGISTERED',
+        'The entered email is already registered',
+      );
     }
 
-    const rol = await this.roleRepository.findByName(ROL_NOMBRES.VETERINARIO);
-    if (!rol) {
-      throw new BadRequestException('El rol ingresado no existe');
+    const role = await this.roleRepository.findByName(ROL_NOMBRES.VETERINARIO);
+    if (!role) {
+      throw new NotFoundBusinessException(
+        'ROLE_NOT_FOUND',
+        'The entered role does not exist',
+      );
     }
 
-    if (!rol.id) {
-      throw new BadRequestException('El rol no tiene un id válido');
+    if (!role.id) {
+      throw new BadRequestBusinessException(
+        'ROLE_INVALID_ID',
+        'The role does not have a valid id',
+      );
     }
 
     if (dto.specialtyIds && dto.specialtyIds.length > 0) {
       for (const specialtyId of dto.specialtyIds) {
         const specialty = await this.specialtyRepository.findById(specialtyId);
         if (!specialty) {
-          throw new BadRequestException(
-            `La especialidad con id ${String(specialtyId)} no fue encontrada`,
+          throw new NotFoundBusinessException(
+            'SPECIALTY_NOT_FOUND',
+            `The specialty with id ${String(specialtyId)} was not found`,
           );
         }
       }
     }
 
-    const codigo = randomInt(100000, 999999).toString();
-    const passwordHash = await bcrypt.hash(dto.contrasena, 10);
+    const code = randomInt(100000, 999999).toString();
+    const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.db.transaction(async (tx) => {
       await tx.insert(users).values({
-        name: dto.nombreCompleto,
-        email: dto.correo,
+        name: dto.fullName,
+        email: dto.email,
         password_hash: passwordHash,
       });
 
       const [newUser] = await tx
         .select()
         .from(users)
-        .where(eq(users.email, dto.correo))
+        .where(eq(users.email, dto.email))
         .limit(1);
 
       if (!newUser) {
-        throw new ConflictException('Error al crear el usuario');
+        throw new InternalServerBusinessException(
+          'USER_CREATION_FAILED',
+          'Failed to create user',
+        );
       }
 
       await tx.insert(userRoles).values({
         user_id: newUser.id,
-        role_id: rol.id,
+        role_id: role.id,
       });
 
       await tx.insert(vets).values({
         user_id: newUser.id,
-        license_number: dto.license_number,
+        license_number: dto.licenseNumber,
       });
 
       if (dto.specialtyIds && dto.specialtyIds.length > 0) {
@@ -246,33 +302,53 @@ export class AuthService {
       return newUser;
     });
 
-    await this.authRedisService.saveVerificationCode(user.id, codigo);
+    await this.authRedisService.saveVerificationCode(user.id, code);
 
     await this.authMailService.sendVerificationCode(
-      dto.correo,
-      dto.nombreCompleto,
-      codigo,
+      dto.email,
+      dto.fullName,
+      code,
     );
 
     this.setVerificationCookie(res, user.id);
 
     return {
       message:
-        'El veterinario fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
+        'The veterinarian was registered successfully. Check your email to verify your account',
     };
   }
 
-  async registerReceptionist(dto: RegisterReceptionistDto, res: Response) {
+  async registerReceptionist(
+    dto: RegisterReceptionistDto,
+    res: Response,
+  ): Promise<RegisterReceptionistResponseDto> {
     await this.registerUser(
-      dto.nombreCompleto,
-      dto.correo,
-      dto.contrasena,
+      dto.fullName,
+      dto.email,
+      dto.password,
       ROL_NOMBRES.RECEPCIONISTA,
       res,
     );
     return {
       message:
-        'El recepcionista fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
+        'The receptionist was registered successfully. Check your email to verify your account',
+    };
+  }
+
+  async registerAdminRequest(
+    dto: RegisterAdminRequestDto,
+    res: Response,
+  ): Promise<RegisterAdminRequestResponseDto> {
+    await this.registerUser(
+      dto.fullName,
+      dto.email,
+      dto.password,
+      ROL_NOMBRES.ADMINISTRADOR,
+      res,
+    );
+    return {
+      message:
+        'The admin registration was requested successfully. Check your email to verify your account. An existing administrator must approve your account before you can log in.',
     };
   }
 
@@ -280,10 +356,13 @@ export class AuthService {
     dto: VerifyCodeRequestDto,
     req: RequestWithCookies,
     res: Response,
-  ) {
+  ): Promise<VerifyEmailResponseDto> {
     const verificationSession = req.cookies.verification_session;
     if (!verificationSession) {
-      throw new BadRequestException('No hay sesión de verificación activa');
+      throw new BadRequestBusinessException(
+        'NO_VERIFICATION_SESSION',
+        'There is no active verification session',
+      );
     }
 
     const decoded = Buffer.from(verificationSession, 'base64').toString();
@@ -292,16 +371,25 @@ export class AuthService {
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
-      throw new BadRequestException('El usuario no fue encontrado');
+      throw new NotFoundBusinessException(
+        'USER_NOT_FOUND',
+        'The user was not found',
+      );
     }
 
     const storedCode = await this.authRedisService.getVerificationCode(userId);
     if (!storedCode) {
-      throw new BadRequestException('El código de verificación ha expirado');
+      throw new BadRequestBusinessException(
+        'VERIFICATION_EXPIRED',
+        'The verification code has expired',
+      );
     }
 
-    if (storedCode !== dto.codigo) {
-      throw new BadRequestException('El código ingresado es incorrecto');
+    if (storedCode !== dto.code) {
+      throw new BadRequestBusinessException(
+        'INVALID_VERIFICATION_CODE',
+        'The entered code is incorrect',
+      );
     }
 
     await this.authRedisService.deleteVerificationCode(userId);
@@ -312,56 +400,60 @@ export class AuthService {
     };
     await this.userRepository.update(updatedUser);
 
-    const userRoles = await this.userRoleRepository.findByUserId(user.id);
-    const rolActivo = userRoles.find((ur) => !ur.revoked_at);
+    const userRolesList = await this.userRoleRepository.findByUserId(user.id);
+    const activeRole = userRolesList.find((ur) => !ur.revoked_at);
 
-    if (
-      rolActivo?.role.name === ROL_NOMBRES.CLIENTE ||
-      rolActivo?.role.name === ROL_NOMBRES.ADMINISTRADOR
-    ) {
-      const approvedUser: User = {
-        ...user,
-        approved_at: new Date(),
-      };
-      await this.userRepository.update(approvedUser);
-    }
+    const shouldAutoLogin = activeRole?.role.requires_approval === false;
 
     res.clearCookie('verification_session');
 
-    if (rolActivo?.role.name === ROL_NOMBRES.CLIENTE) {
-      const profileId = await this.getProfileId(user.id, rolActivo.role.name);
+    if (shouldAutoLogin) {
+      const profileId = await this.getProfileId(user.id, activeRole.role.name);
       const payload = {
         sub: user.id,
         email: user.email,
-        rol: rolActivo.role.name,
+        rol: activeRole.role.name,
         profileId,
       };
-      const token = this.jwtService.sign(payload);
-      this.setSessionCookie(res, token);
+      const accessToken = this.jwtService.sign(payload);
+      const refreshToken = await this.authRedisService.createRefreshToken(
+        user.id,
+      );
+      this.setAccessTokenCookie(res, accessToken);
+      this.setRefreshTokenCookie(res, refreshToken);
     }
 
-    return { message: 'Cuenta verificada correctamente!' };
+    return { message: 'Account verified successfully!' };
   }
 
-  async resendVerification(correo: string, res: Response) {
-    const user = await this.userRepository.findByEmail(correo);
+  async resendVerification(
+    email: string,
+    res: Response,
+  ): Promise<ResendVerificationResponseDto> {
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      throw new BadRequestException('El usuario ingresado no fue encontrado');
+      throw new NotFoundBusinessException(
+        'USER_NOT_FOUND',
+        'The entered user was not found',
+      );
     }
 
     if (user.email_verified_at) {
-      throw new BadRequestException('El correo ya fue verificado');
+      throw new BadRequestBusinessException(
+        'EMAIL_ALREADY_VERIFIED',
+        'The email has already been verified',
+      );
     }
 
     const newCode = randomInt(100000, 999999).toString();
 
     await this.authRedisService.saveVerificationCode(user.id, newCode);
 
-    await this.authMailService.sendVerificationCode(correo, correo, newCode);
+    await this.authMailService.sendVerificationCode(email, email, newCode);
 
     this.setVerificationCookie(res, user.id);
 
-    return { message: 'Código de verificación reenviado correctamente' };
+    return { message: 'Verification code resent successfully' };
   }
 
   private async getProfileId(
@@ -379,56 +471,287 @@ export class AuthService {
     return null;
   }
 
-  async login(dto: LoginRequestDto, rolEsperado: RolNombre, res: Response) {
-    const user = await this.userRepository.findByEmail(dto.correo);
+  private async loginCore(
+    dto: LoginRequestDto,
+    expectedRole: RolNombre,
+    res: Response,
+  ): Promise<{
+    user: LoginUserSummaryDto;
+    role: string;
+    profile: unknown;
+  }> {
+    const user = await this.userRepository.findByEmail(dto.email);
     if (!user) {
-      throw new UnauthorizedException(
-        'Las credenciales ingresadas no son válidas',
+      throw new UnauthorizedBusinessException(
+        'INVALID_CREDENTIALS',
+        'The entered credentials are not valid',
       );
     }
 
-    const passwordValida = await bcrypt.compare(
-      dto.contrasena,
+    const passwordValid = await bcrypt.compare(
+      dto.password,
       user.password_hash,
     );
-    if (!passwordValida) {
-      throw new UnauthorizedException(
-        'Las credenciales ingresadas no son válidas',
+    if (!passwordValid) {
+      throw new UnauthorizedBusinessException(
+        'INVALID_CREDENTIALS',
+        'The entered credentials are not valid',
       );
     }
 
     if (!user.email_verified_at) {
-      throw new UnauthorizedException('Debes verificar tu correo primero');
-    }
-
-    if (!user.approved_at) {
-      throw new UnauthorizedException('Tu cuenta aún no ha sido aprobada');
-    }
-
-    const userRoles = await this.userRoleRepository.findByUserId(user.id);
-    const rolActivo = userRoles.find((ur) => !ur.revoked_at);
-
-    if (!rolActivo) {
-      throw new UnauthorizedException('El usuario no tiene un rol asignado');
-    }
-
-    if (rolActivo.role.name !== rolEsperado) {
-      throw new UnauthorizedException(
-        'Las credenciales ingresadas no son válidas',
+      throw new UnauthorizedBusinessException(
+        'EMAIL_NOT_VERIFIED',
+        'You must verify your email first',
       );
     }
 
-    const profileId = await this.getProfileId(user.id, rolActivo.role.name);
+    const userRolesList = await this.userRoleRepository.findByUserId(user.id);
+    const activeRole = userRolesList.find((ur) => !ur.revoked_at);
+
+    if (!activeRole) {
+      throw new UnauthorizedBusinessException(
+        'NO_ROLE_ASSIGNED',
+        'The user does not have an assigned role',
+      );
+    }
+
+    if (activeRole.role.requires_approval && !activeRole.approved_at) {
+      throw new UnauthorizedBusinessException(
+        'ACCOUNT_NOT_APPROVED',
+        'Your account has not been approved yet',
+      );
+    }
+
+    if (activeRole.role.name !== expectedRole) {
+      throw new UnauthorizedBusinessException(
+        'INVALID_CREDENTIALS',
+        'The entered credentials are not valid',
+      );
+    }
+
+    const profileId = await this.getProfileId(user.id, activeRole.role.name);
     const payload = {
       sub: user.id,
       email: user.email,
-      rol: rolActivo.role.name,
+      rol: activeRole.role.name,
       profileId,
     };
 
-    const token = this.jwtService.sign(payload);
-    this.setSessionCookie(res, token);
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = await this.authRedisService.createRefreshToken(
+      user.id,
+    );
+    this.setAccessTokenCookie(res, accessToken);
+    this.setRefreshTokenCookie(res, refreshToken);
 
-    return { message: 'Inicio de sesión exitoso', rol: rolActivo.role.name };
+    const userSummary: LoginUserSummaryDto = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
+
+    let profile: unknown = null;
+
+    if (activeRole.role.name === ROL_NOMBRES.CLIENTE) {
+      const client = await this.clientRepository.findByUserId(user.id);
+      if (client) {
+        profile = {
+          id: client.id,
+          phone: client.phone,
+          address: client.address,
+        };
+      }
+    } else if (activeRole.role.name === ROL_NOMBRES.VETERINARIO) {
+      const vet = await this.vetRepository.findByUserId(user.id);
+      if (vet) {
+        profile = {
+          id: vet.id,
+          licenseNumber: vet.license_number,
+        };
+      }
+    }
+
+    return {
+      user: userSummary,
+      role: activeRole.role.name,
+      profile,
+    };
+  }
+
+  async loginClient(
+    dto: LoginRequestDto,
+    res: Response,
+  ): Promise<LoginClientResponseDto> {
+    const result = await this.loginCore(dto, ROL_NOMBRES.CLIENTE, res);
+    return {
+      message: 'Login successful',
+      user: result.user,
+      role: result.role,
+      profile: result.profile as {
+        id: number;
+        phone: string;
+        address: string | null;
+      },
+    };
+  }
+
+  async loginVet(
+    dto: LoginRequestDto,
+    res: Response,
+  ): Promise<LoginVetResponseDto> {
+    const result = await this.loginCore(dto, ROL_NOMBRES.VETERINARIO, res);
+    return {
+      message: 'Login successful',
+      user: result.user,
+      role: result.role,
+      profile: result.profile as { id: number; licenseNumber: string },
+    };
+  }
+
+  async loginReceptionist(
+    dto: LoginRequestDto,
+    res: Response,
+  ): Promise<LoginReceptionistResponseDto> {
+    const result = await this.loginCore(dto, ROL_NOMBRES.RECEPCIONISTA, res);
+    return {
+      message: 'Login successful',
+      user: result.user,
+      role: result.role,
+      profile: null,
+    };
+  }
+
+  async loginAdmin(
+    dto: LoginRequestDto,
+    res: Response,
+  ): Promise<LoginAdminResponseDto> {
+    const result = await this.loginCore(dto, ROL_NOMBRES.ADMINISTRADOR, res);
+    return {
+      message: 'Login successful',
+      user: result.user,
+      role: result.role,
+      profile: null,
+    };
+  }
+
+  async refreshTokens(
+    req: RequestWithCookies,
+    res: Response,
+  ): Promise<{ message: string; user: LoginUserSummaryDto; role: string }> {
+    const refreshTokenId = req.cookies.refresh_token;
+    if (!refreshTokenId) {
+      throw new UnauthorizedBusinessException(
+        'NO_REFRESH_TOKEN',
+        'Refresh token is missing',
+      );
+    }
+
+    const accessToken = req.cookies.access_token;
+    if (!accessToken) {
+      throw new UnauthorizedBusinessException(
+        'NO_ACCESS_TOKEN',
+        'Access token is missing',
+      );
+    }
+
+    let payload: {
+      sub: number;
+      email: string;
+      rol: string;
+      profileId: number | null;
+    };
+    try {
+      payload = this.jwtService.verify(accessToken);
+    } catch {
+      throw new UnauthorizedBusinessException(
+        'INVALID_ACCESS_TOKEN',
+        'Access token is invalid',
+      );
+    }
+
+    const userId = payload.sub;
+    const isValid = await this.authRedisService.validateRefreshToken(
+      userId,
+      refreshTokenId,
+    );
+
+    if (!isValid) {
+      throw new UnauthorizedBusinessException(
+        'INVALID_REFRESH_TOKEN',
+        'Refresh token is invalid or expired',
+      );
+    }
+
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new UnauthorizedBusinessException(
+        'USER_NOT_FOUND',
+        'User not found',
+      );
+    }
+
+    const userRolesList = await this.userRoleRepository.findByUserId(user.id);
+    const activeRole = userRolesList.find((ur) => !ur.revoked_at);
+
+    if (!activeRole) {
+      throw new UnauthorizedBusinessException(
+        'NO_ROLE_ASSIGNED',
+        'The user does not have an assigned role',
+      );
+    }
+
+    const profileId = await this.getProfileId(user.id, activeRole.role.name);
+    const newPayload = {
+      sub: user.id,
+      email: user.email,
+      rol: activeRole.role.name,
+      profileId,
+    };
+
+    const newAccessToken = this.jwtService.sign(newPayload);
+
+    await this.authRedisService.revokeRefreshToken(userId, refreshTokenId);
+    const newRefreshToken =
+      await this.authRedisService.createRefreshToken(userId);
+
+    this.setAccessTokenCookie(res, newAccessToken);
+    this.setRefreshTokenCookie(res, newRefreshToken);
+
+    return {
+      message: 'Tokens refreshed successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      role: activeRole.role.name,
+    };
+  }
+
+  async logout(
+    req: RequestWithCookies,
+    res: Response,
+  ): Promise<{ message: string }> {
+    const refreshTokenId = req.cookies.refresh_token;
+    const accessToken = req.cookies.access_token;
+
+    if (accessToken) {
+      try {
+        const payload = this.jwtService.verify<{ sub: number }>(accessToken);
+        if (refreshTokenId) {
+          await this.authRedisService.revokeRefreshToken(
+            payload.sub,
+            refreshTokenId,
+          );
+        }
+      } catch {
+        // Token inválido, continuar limpiando cookies
+      }
+    }
+
+    this.clearAuthCookies(res);
+
+    return { message: 'Session closed successfully' };
   }
 }

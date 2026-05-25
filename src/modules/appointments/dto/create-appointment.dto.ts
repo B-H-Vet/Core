@@ -26,5 +26,5 @@ export class CreateAppointmentDto {
 
   @IsInt()
   @IsOptional()
-  user_id?: number;
+  client_id?: number;
 }

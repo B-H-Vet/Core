@@ -11,10 +11,9 @@ export const medicineDetails = mysqlTable('medicine_details', {
     .notNull()
     .references(() => medicalRecords.id),
 
-  supply_id: int('supply_id')
-    .notNull()
-    .references(() => supplies.id),
+  supply_id: int('supply_id').references(() => supplies.id),
 
+  quantity: int('quantity').notNull(),
   dose: text('dose').notNull(),
   duration: text('duration').notNull(),
 

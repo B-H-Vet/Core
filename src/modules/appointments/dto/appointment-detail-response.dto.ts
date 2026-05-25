@@ -7,7 +7,7 @@ export class AppointmentServiceResponseDto {
 
 export class AppointmentDetailResponseDto {
   id!: number;
-  user_id!: number;
+  client_id!: number;
   vet_id!: number;
   pet_id!: number;
   date!: Date;

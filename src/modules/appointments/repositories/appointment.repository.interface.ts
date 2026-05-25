@@ -6,7 +6,7 @@ import type {
 export const APPOINTMENT_REPOSITORY = 'APPOINTMENT_REPOSITORY';
 
 export interface CreateAppointmentInput {
-  user_id: number;
+  client_id: number;
   vet_id: number;
   pet_id: number;
   date: Date;
@@ -36,8 +36,8 @@ export abstract class IAppointmentRepository {
   abstract create(data: CreateAppointmentInput): Promise<Appointment>;
   abstract findById(id: number): Promise<Appointment | null>;
   abstract findAll(pagination: PaginationParams): Promise<Appointment[]>;
-  abstract findByClientUserId(
-    userId: number,
+  abstract findByClientId(
+    clientId: number,
     pagination: PaginationParams,
   ): Promise<Appointment[]>;
   abstract findByVetId(
@@ -45,7 +45,7 @@ export abstract class IAppointmentRepository {
     pagination: PaginationParams,
   ): Promise<Appointment[]>;
   abstract count(): Promise<number>;
-  abstract countByClientUserId(userId: number): Promise<number>;
+  abstract countByClientId(clientId: number): Promise<number>;
   abstract countByVetId(vetId: number): Promise<number>;
 
   abstract findVetConflict(

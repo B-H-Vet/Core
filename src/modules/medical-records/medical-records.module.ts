@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 
+import { SuppliesModule } from '../inventory/supplies/supplies.module';
+import { VetsRepositoriesModule } from '../vets/vets-repositories.module';
+
 import { MedicalRecordsController } from './controllers/medical-records.controller';
 import { MedicalRecordRepository } from './repositories/medical-record.repository';
 import { MEDICAL_RECORD_REPOSITORY } from './repositories/medical-record.repository.interface';
@@ -12,6 +15,7 @@ import { VACCINE_DETAIL_REPOSITORY } from './repositories/vaccine-detail.reposit
 import { MedicalRecordsService } from './services/medical-records.service';
 
 @Module({
+  imports: [SuppliesModule, VetsRepositoriesModule],
   controllers: [MedicalRecordsController],
   providers: [
     MedicalRecordsService,

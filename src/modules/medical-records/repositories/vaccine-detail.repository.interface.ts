@@ -14,4 +14,5 @@ export abstract class IVaccineDetailRepository {
   abstract findByMedicalRecordId(
     medicalRecordId: number,
   ): Promise<VaccineDetail[]>;
+  abstract findExpiringSoon(from: Date, to: Date): Promise<VaccineDetail[]>;
 }

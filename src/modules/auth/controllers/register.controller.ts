@@ -1,13 +1,14 @@
-import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import type { Response } from 'express';
 
-import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
-import { Roles } from '../decorators/roles.decorator';
+import { RegisterAdminRequestDto } from '../dto/register-admin-request.dto';
 import { RegisterClientDto } from '../dto/register-client.dto';
 import { RegisterReceptionistDto } from '../dto/register-receptionist.dto';
 import { RegisterVetDto } from '../dto/register-vet.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { RolesGuard } from '../guards/roles.guard';
+import { RegisterAdminRequestResponseDto } from '../dto/responses/register-admin-request-response.dto';
+import { RegisterClientResponseDto } from '../dto/responses/register-client-response.dto';
+import { RegisterReceptionistResponseDto } from '../dto/responses/register-receptionist-response.dto';
+import { RegisterVetResponseDto } from '../dto/responses/register-vet-response.dto';
 import { AuthService } from '../services/auth.service';
 
 @Controller('register')
@@ -18,7 +19,7 @@ export class RegisterController {
   async registerClient(
     @Body() dto: RegisterClientDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<RegisterClientResponseDto> {
     return this.authService.registerClient(dto, res);
   }
 
@@ -26,17 +27,23 @@ export class RegisterController {
   async registerVet(
     @Body() dto: RegisterVetDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<RegisterVetResponseDto> {
     return this.authService.registerVet(dto, res);
   }
 
+  @Post('admin-request')
+  async registerAdminRequest(
+    @Body() dto: RegisterAdminRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<RegisterAdminRequestResponseDto> {
+    return this.authService.registerAdminRequest(dto, res);
+  }
+
   @Post('receptionist')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(ROL_NOMBRES.ADMINISTRADOR)
   async registerReceptionist(
     @Body() dto: RegisterReceptionistDto,
     @Res({ passthrough: true }) res: Response,
-  ) {
+  ): Promise<RegisterReceptionistResponseDto> {
     return this.authService.registerReceptionist(dto, res);
   }
 }
