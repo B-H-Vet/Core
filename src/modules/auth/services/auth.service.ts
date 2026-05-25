@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { Response } from 'express';
 
+import { AuditService } from '../../../common/audit/audit.service';
 import { DATABASE_CONNECTION } from '../../../database/database.module';
 import type { Database } from '../../../database/database.module';
 import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
@@ -64,6 +65,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly authMailService: AuthMailService,
     private readonly authRedisService: AuthRedisService,
+    private readonly auditService: AuditService,
 
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
@@ -157,13 +159,20 @@ export class AuthService {
   }
 
   async registerClient(dto: RegisterClientDto, res: Response) {
-    await this.registerUser(
+    const user = await this.registerUser(
       dto.nombreCompleto,
       dto.correo,
       dto.contrasena,
       ROL_NOMBRES.CLIENTE,
       res,
     );
+
+    this.auditService.logUserRegistered({
+      assignedRole: ROL_NOMBRES.CLIENTE,
+      email: dto.correo,
+      newUserId: String(user.id),
+    });
+
     return {
       message:
         'El cliente fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
@@ -256,6 +265,12 @@ export class AuthService {
 
     this.setVerificationCookie(res, user.id);
 
+    this.auditService.logUserRegistered({
+      assignedRole: ROL_NOMBRES.VETERINARIO,
+      email: dto.correo,
+      newUserId: String(user.id),
+    });
+
     return {
       message:
         'El veterinario fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
@@ -263,13 +278,20 @@ export class AuthService {
   }
 
   async registerReceptionist(dto: RegisterReceptionistDto, res: Response) {
-    await this.registerUser(
+    const user = await this.registerUser(
       dto.nombreCompleto,
       dto.correo,
       dto.contrasena,
       ROL_NOMBRES.RECEPCIONISTA,
       res,
     );
+
+    this.auditService.logUserRegistered({
+      assignedRole: ROL_NOMBRES.RECEPCIONISTA,
+      email: dto.correo,
+      newUserId: String(user.id),
+    });
+
     return {
       message:
         'El recepcionista fue registrado correctamente. Revisa tu correo para verificar tu cuenta',
@@ -315,6 +337,12 @@ export class AuthService {
     const userRoles = await this.userRoleRepository.findByUserId(user.id);
     const rolActivo = userRoles.find((ur) => !ur.revoked_at);
 
+    this.auditService.logEmailVerified({
+      userId: String(user.id),
+      userName: user.name,
+      userRole: rolActivo?.role.name ?? '',
+    });
+
     if (
       rolActivo?.role.name === ROL_NOMBRES.CLIENTE ||
       rolActivo?.role.name === ROL_NOMBRES.ADMINISTRADOR
@@ -324,6 +352,13 @@ export class AuthService {
         approved_at: new Date(),
       };
       await this.userRepository.update(approvedUser);
+
+      this.auditService.logAccountApproved({
+        approverName: user.name,
+        approverId: String(user.id),
+        approvedUserId: String(user.id),
+        approverRole: rolActivo.role.name,
+      });
     }
 
     res.clearCookie('verification_session');
@@ -382,6 +417,11 @@ export class AuthService {
   async login(dto: LoginRequestDto, rolEsperado: RolNombre, res: Response) {
     const user = await this.userRepository.findByEmail(dto.correo);
     if (!user) {
+      this.auditService.logLoginFailed({
+        failureReason: 'Usuario no encontrado',
+        terminalIp: '',
+        userAgent: '',
+      });
       throw new UnauthorizedException(
         'Las credenciales ingresadas no son válidas',
       );
@@ -392,6 +432,11 @@ export class AuthService {
       user.password_hash,
     );
     if (!passwordValida) {
+      this.auditService.logLoginFailed({
+        failureReason: 'Contraseña incorrecta',
+        terminalIp: '',
+        userAgent: '',
+      });
       throw new UnauthorizedException(
         'Las credenciales ingresadas no son válidas',
       );
@@ -413,6 +458,11 @@ export class AuthService {
     }
 
     if (rolActivo.role.name !== rolEsperado) {
+      this.auditService.logLoginFailed({
+        failureReason: 'Rol no coincide',
+        terminalIp: '',
+        userAgent: '',
+      });
       throw new UnauthorizedException(
         'Las credenciales ingresadas no son válidas',
       );
@@ -428,6 +478,13 @@ export class AuthService {
 
     const token = this.jwtService.sign(payload);
     this.setSessionCookie(res, token);
+
+    this.auditService.logLoginSuccess({
+      loggedUserName: user.name,
+      userId: String(user.id),
+      loggedUserRole: rolActivo.role.name,
+      emailSnapshot: user.email,
+    });
 
     return { message: 'Inicio de sesión exitoso', rol: rolActivo.role.name };
   }
