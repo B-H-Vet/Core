@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { MailModule } from '../../common/mail/mail.module';
 import { PdfModule } from '../../common/pdf/pdf.module';
 
 import { InvoicesController } from './controllers/invoices.controller';
@@ -14,14 +15,18 @@ import { INVOICE_QUERY_REPOSITORY } from './repositories/invoice-query.repositor
 import { InvoiceRepository } from './repositories/invoice.repository';
 import { INVOICE_REPOSITORY } from './repositories/invoice.repository.interface';
 import { InvoiceCalculationService } from './services/invoice-calculation.service';
+import { InvoiceMailService } from './services/invoice-mail.service';
+import { InvoiceRedisService } from './services/invoice-redis.service';
 import { InvoicesService } from './services/invoices.service';
 
 @Module({
-  imports: [PdfModule],
+  imports: [MailModule, PdfModule],
   controllers: [InvoicesController],
   providers: [
     InvoicesService,
     InvoiceCalculationService,
+    InvoiceRedisService,
+    InvoiceMailService,
     {
       provide: INVOICE_REPOSITORY,
       useClass: InvoiceRepository,
