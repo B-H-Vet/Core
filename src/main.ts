@@ -21,6 +21,4 @@ async function bootstrap() {
   app.useGlobalFilters(new BusinessExceptionFilter());
   await app.listen(process.env.APP_PORT ?? 3000);
 }
-bootstrap().catch((err: unknown) => {
-  console.error('Error starting the application:', err);
-});
+bootstrap();

@@ -3,13 +3,6 @@
 /node_modules
 /build
 
-# TypeScript
-*.tsbuildinfo
-
-# Lock files (usamos pnpm)
-package-lock.json
-yarn.lock
-
 # Logs
 logs
 *.log
