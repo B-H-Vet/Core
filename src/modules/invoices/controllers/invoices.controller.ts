@@ -15,6 +15,7 @@ import { Response } from 'express';
 
 import { CurrentUserPayload } from '../../../common/types/current-user.type';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Public } from '../../auth/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
@@ -92,6 +93,15 @@ export class InvoicesController {
     );
   }
 
+  @Post(':id/request-payment')
+  @Roles('CLIENTE')
+  requestPayment(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.invoicesService.requestPayment(id, user);
+  }
+
   @Get(':id/pdf')
   @Roles('CLIENTE', 'RECEPCIONISTA', 'VETERINARIO', 'ADMINISTRADOR')
   async downloadPdf(
@@ -105,6 +115,12 @@ export class InvoicesController {
       'Content-Disposition': `attachment; filename="factura-${id.toString()}.pdf"`,
     });
     return res.send(pdfBuffer);
+  }
+
+  @Get('pay/:token')
+  @Public()
+  payInvoice(@Param('token') token: string) {
+    return this.invoicesService.payInvoice(token);
   }
 
   @Post(':id/cancel')

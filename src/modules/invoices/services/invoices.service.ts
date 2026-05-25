@@ -1,4 +1,4 @@
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
 
@@ -19,6 +19,8 @@ import { CreateInvoiceResponseDto } from '../dto/create-invoice-response.dto';
 import { CreateInvoiceDto } from '../dto/create-invoice.dto';
 import { InvoiceDetailResponseDto } from '../dto/invoice-detail-response.dto';
 import { InvoiceListItemResponseDto } from '../dto/invoice-list-item-response.dto';
+import { PayInvoiceResponseDto } from '../dto/pay-invoice-response.dto';
+import { RequestPaymentResponseDto } from '../dto/request-payment-response.dto';
 import {
   INVOICE_ADDITIONAL_SERVICE_REPOSITORY,
   IInvoiceAdditionalServiceRepository,
@@ -42,6 +44,8 @@ import {
 import { buildInvoicePdfTemplate } from '../templates/invoice-pdf.template';
 
 import { InvoiceCalculationService } from './invoice-calculation.service';
+import { InvoiceMailService } from './invoice-mail.service';
+import { InvoiceRedisService } from './invoice-redis.service';
 
 export interface PaginationParams {
   page?: number;
@@ -69,6 +73,10 @@ export class InvoicesService {
     private readonly invoiceCalculationService: InvoiceCalculationService,
 
     private readonly pdfService: PdfService,
+
+    private readonly invoiceRedisService: InvoiceRedisService,
+
+    private readonly invoiceMailService: InvoiceMailService,
   ) {}
 
   private generateInvoiceNumber(): string {
@@ -468,6 +476,34 @@ export class InvoicesService {
     };
   }
 
+  private async generateInvoicePdf(invoiceId: number): Promise<Buffer> {
+    const invoice =
+      await this.invoiceQueryRepository.findInvoiceWithClientDetails(invoiceId);
+    if (!invoice) {
+      throw new NotFoundBusinessException(
+        'INVOICE_NOT_FOUND',
+        'La factura no fue encontrada',
+        { invoice_id: invoiceId },
+      );
+    }
+
+    const [medicinesData, additionalServicesData, inventoryItemsData] =
+      await Promise.all([
+        this.invoiceQueryRepository.findInvoiceMedicineLines(invoiceId),
+        this.invoiceQueryRepository.findInvoiceServiceLines(invoiceId),
+        this.invoiceQueryRepository.findInvoiceInventoryLines(invoiceId),
+      ]);
+
+    const html = buildInvoicePdfTemplate(
+      invoice,
+      medicinesData,
+      additionalServicesData,
+      inventoryItemsData,
+    );
+
+    return this.pdfService.renderFromHtml(html);
+  }
+
   async downloadInvoicePdf(
     id: number,
     user: CurrentUserPayload,
@@ -504,21 +540,7 @@ export class InvoicesService {
       }
     }
 
-    const [medicinesData, additionalServicesData, inventoryItemsData] =
-      await Promise.all([
-        this.invoiceQueryRepository.findInvoiceMedicineLines(id),
-        this.invoiceQueryRepository.findInvoiceServiceLines(id),
-        this.invoiceQueryRepository.findInvoiceInventoryLines(id),
-      ]);
-
-    const html = buildInvoicePdfTemplate(
-      invoice,
-      medicinesData,
-      additionalServicesData,
-      inventoryItemsData,
-    );
-
-    return this.pdfService.renderFromHtml(html);
+    return this.generateInvoicePdf(id);
   }
 
   async findAll(
@@ -646,6 +668,148 @@ export class InvoicesService {
       cancellation_reason: dto.reason,
       cancelled_at: updated.cancelled_at ?? new Date(),
       message: 'La factura fue anulada correctamente',
+    };
+  }
+
+  async requestPayment(
+    id: number,
+    user: CurrentUserPayload,
+  ): Promise<RequestPaymentResponseDto> {
+    if (user.rol !== 'CLIENTE') {
+      throw new ForbiddenBusinessException(
+        'FORBIDDEN_RESOURCE',
+        'Solo los clientes pueden solicitar el pago de una factura',
+      );
+    }
+
+    if (!user.profileId) {
+      throw new ForbiddenBusinessException(
+        'CLIENT_PROFILE_MISSING',
+        'No tienes un perfil de cliente asociado',
+      );
+    }
+
+    const invoice =
+      await this.invoiceQueryRepository.findInvoiceWithClientDetails(id);
+    if (!invoice) {
+      throw new NotFoundBusinessException(
+        'INVOICE_NOT_FOUND',
+        'La factura ingresada no fue encontrada',
+        { invoice_id: id },
+      );
+    }
+
+    if (invoice.client_id !== user.profileId) {
+      throw new ForbiddenBusinessException(
+        'FORBIDDEN_RESOURCE',
+        'No tienes permisos para solicitar el pago de esta factura',
+      );
+    }
+
+    if (invoice.status !== 'PENDIENTE') {
+      throw new BadRequestBusinessException(
+        'INVOICE_NOT_PENDING',
+        'Solo se pueden pagar facturas pendientes de pago',
+        undefined,
+        { invoice_id: id, current_status: invoice.status },
+      );
+    }
+
+    const token = randomUUID();
+    await this.invoiceRedisService.savePaymentToken(token, {
+      invoice_id: invoice.id,
+      client_id: invoice.client_id,
+    });
+
+    const paymentLink = this.buildPaymentLink(token);
+    await this.invoiceMailService.sendPaymentRequest(invoice.client_email, {
+      clientName: invoice.client_name,
+      invoiceNumber: invoice.invoice_number,
+      totalAmount: invoice.total_amount,
+      paymentLink,
+      expirationMinutes: Math.ceil(
+        this.invoiceRedisService.paymentTtlSeconds / 60,
+      ),
+    });
+
+    return {
+      message: 'El enlace de pago fue enviado a su correo electrónico',
+    };
+  }
+
+  private buildPaymentLink(token: string): string {
+    const baseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
+    return `${baseUrl}/invoices/pay/${token}`;
+  }
+
+  async payInvoice(token: string): Promise<PayInvoiceResponseDto> {
+    const tokenData = await this.invoiceRedisService.getPaymentToken(token);
+    if (!tokenData) {
+      throw new NotFoundBusinessException(
+        'PAYMENT_TOKEN_NOT_FOUND',
+        'El enlace de pago ha expirado o no es válido',
+      );
+    }
+
+    const invoice = await this.invoiceRepository.findById(tokenData.invoice_id);
+    if (!invoice) {
+      throw new NotFoundBusinessException(
+        'INVOICE_NOT_FOUND',
+        'La factura no fue encontrada',
+      );
+    }
+
+    if (invoice.status === 'PAGADA') {
+      return {
+        id: invoice.id,
+        status: invoice.status,
+        paid_at: invoice.paid_at ?? new Date(),
+        message: 'La factura ya se encuentra pagada',
+      };
+    }
+
+    if (invoice.status === 'ANULADA') {
+      throw new BadRequestBusinessException(
+        'INVOICE_CANCELLED',
+        'No se puede pagar una factura anulada',
+        undefined,
+        { invoice_id: invoice.id },
+      );
+    }
+
+    const updatedInvoice = await this.invoiceRepository.update({
+      id: invoice.id,
+      status: 'PAGADA',
+      paid_at: new Date(),
+      remaining_amount: '0.00',
+    });
+
+    const pdfBuffer = await this.generateInvoicePdf(invoice.id);
+
+    const invoiceWithDetails =
+      await this.invoiceQueryRepository.findInvoiceWithClientDetails(
+        invoice.id,
+      );
+
+    if (invoiceWithDetails) {
+      await this.invoiceMailService.sendPaymentConfirmation(
+        invoiceWithDetails.client_email,
+        {
+          clientName: invoiceWithDetails.client_name,
+          invoiceNumber: invoice.invoice_number,
+          totalAmount: Number(updatedInvoice.total_amount),
+        },
+        pdfBuffer,
+      );
+    }
+
+    await this.invoiceRedisService.deletePaymentToken(token);
+
+    return {
+      id: updatedInvoice.id,
+      status: updatedInvoice.status,
+      paid_at: updatedInvoice.paid_at ?? new Date(),
+      message: 'El pago fue procesado exitosamente',
     };
   }
 }
