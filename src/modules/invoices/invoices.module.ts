@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { PdfModule } from '../../common/pdf/pdf.module';
+
 import { InvoicesController } from './controllers/invoices.controller';
 import { InvoiceAdditionalServiceRepository } from './repositories/invoice-additional-service.repository';
 import { INVOICE_ADDITIONAL_SERVICE_REPOSITORY } from './repositories/invoice-additional-service.repository.interface';
@@ -15,7 +17,7 @@ import { InvoiceCalculationService } from './services/invoice-calculation.servic
 import { InvoicesService } from './services/invoices.service';
 
 @Module({
-  imports: [],
+  imports: [PdfModule],
   controllers: [InvoicesController],
   providers: [
     InvoicesService,

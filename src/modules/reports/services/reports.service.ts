@@ -1,12 +1,13 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 
+import { PdfService } from '../../../common/pdf/pdf.service';
 import { ReportPeriodDto } from '../dto/report-period.dto';
 import {
   IReportsRepository,
   REPORTS_REPOSITORY,
 } from '../repositories/reports.repository.interface';
 
-import { PdfService } from './pdf.service';
+import { ReportTemplateService } from './report-template.service';
 
 @Injectable()
 export class ReportsService {
@@ -15,6 +16,7 @@ export class ReportsService {
     private readonly reportsRepository: IReportsRepository,
 
     private readonly pdfService: PdfService,
+    private readonly reportTemplateService: ReportTemplateService,
   ) {}
 
   private parsePeriod(dto: ReportPeriodDto): {
@@ -42,69 +44,27 @@ export class ReportsService {
     const period = this.parsePeriod(dto);
 
     const rows = await this.reportsRepository.findAppointmentsByPeriod(period);
+    const html = this.reportTemplateService.appointmentsTemplate(
+      rows,
+      period.label,
+    );
 
-    return this.pdfService.generateReport({
-      title: 'Reporte de citas por periodo',
-      subtitle: period.label,
-      columns: ['ID', 'Fecha', 'Estado', 'Cliente', 'Mascota', 'Veterinario'],
-      rows: rows.map((row) => [
-        row.appointment_id,
-        row.appointment_date.toISOString(),
-        row.status,
-        row.client_email,
-        row.pet_name,
-        row.vet_email,
-      ]),
-    });
+    return this.pdfService.renderFromHtml(html);
   }
 
   async billingByPeriod(dto: ReportPeriodDto): Promise<Buffer> {
     const period = this.parsePeriod(dto);
 
     const rows = await this.reportsRepository.findBillingByPeriod(period);
+    const html = this.reportTemplateService.billingTemplate(rows, period.label);
 
-    const total = rows.reduce((acc, row) => acc + Number(row.total), 0);
-
-    return this.pdfService.generateReport({
-      title: 'Reporte de facturación por periodo',
-      subtitle: `${period.label} | Total facturado: ${String(total)}`,
-      columns: ['Factura', 'Cita', 'Subtotal', 'Total', 'Estado', 'Fecha'],
-      rows: rows.map((row) => [
-        row.invoice_id,
-        row.appointment_id,
-        row.subtotal,
-        row.total,
-        row.status,
-        row.created_at.toISOString(),
-      ]),
-    });
+    return this.pdfService.renderFromHtml(html);
   }
 
   async currentInventory(): Promise<Buffer> {
     const rows = await this.reportsRepository.findCurrentInventory();
+    const html = this.reportTemplateService.inventoryTemplate(rows);
 
-    return this.pdfService.generateReport({
-      title: 'Reporte de inventario actual',
-      subtitle:
-        'Productos con stock disponible, precio, vencimiento y alerta de stock bajo',
-      columns: [
-        'ID',
-        'Producto',
-        'Stock',
-        'Mínimo',
-        'Precio',
-        'Vence',
-        'Alerta',
-      ],
-      rows: rows.map((row) => [
-        row.supply_id,
-        row.name,
-        row.stock,
-        row.min_stock,
-        row.price,
-        row.expiring_date ? new Date(row.expiring_date).toISOString() : '',
-        row.stock <= row.min_stock ? 'Stock bajo' : '',
-      ]),
-    });
+    return this.pdfService.renderFromHtml(html);
   }
 }

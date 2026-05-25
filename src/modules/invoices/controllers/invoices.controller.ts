@@ -7,9 +7,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 
 import { CurrentUserPayload } from '../../../common/types/current-user.type';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -88,6 +90,21 @@ export class InvoicesController {
       dto,
       user,
     );
+  }
+
+  @Get(':id/pdf')
+  @Roles('CLIENTE', 'RECEPCIONISTA', 'VETERINARIO', 'ADMINISTRADOR')
+  async downloadPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: CurrentUserPayload,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.invoicesService.downloadInvoicePdf(id, user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="factura-${id.toString()}.pdf"`,
+    });
+    return res.send(pdfBuffer);
   }
 
   @Post(':id/cancel')
