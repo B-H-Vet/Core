@@ -20,6 +20,7 @@ export interface UserRoleWithRole {
 export const USER_ROLE_REPOSITORY = 'USER_ROLE_REPOSITORY';
 
 export abstract class IUserRoleRepository {
+  abstract findById(id: number): Promise<UserRoleWithRole | null>;
   abstract findByUserId(userId: number): Promise<UserRoleWithRole[]>;
   abstract findByUserIdAndRoleId(
     userId: number,

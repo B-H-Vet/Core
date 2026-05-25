@@ -20,3 +20,12 @@ export interface PaymentConfirmationEmailData {
   clinicAddress: string;
   total: number;
 }
+
+export interface CancellationEmailData {
+  to: string;
+  petName: string;
+  vetName: string;
+  appointmentDate: Date;
+  clinicAddress: string;
+  cancelReason: string;
+}

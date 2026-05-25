@@ -10,7 +10,6 @@ export class UserMapper {
       name: user.name,
       email: user.email,
       email_verified_at: user.email_verified_at,
-      approved_at: user.approved_at,
       created_at: user.created_at,
       rol: rolActivo?.role.name ?? null,
     };

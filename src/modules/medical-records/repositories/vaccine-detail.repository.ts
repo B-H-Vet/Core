@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq, gte, lte } from 'drizzle-orm';
 
 import {
   DATABASE_CONNECTION,
@@ -43,5 +43,17 @@ export class VaccineDetailRepository extends IVaccineDetailRepository {
       .select()
       .from(vaccineDetails)
       .where(eq(vaccineDetails.medical_record_id, medicalRecordId));
+  }
+
+  async findExpiringSoon(from: Date, to: Date): Promise<VaccineDetail[]> {
+    return this.db
+      .select()
+      .from(vaccineDetails)
+      .where(
+        and(
+          gte(vaccineDetails.next_dose_date, from),
+          lte(vaccineDetails.next_dose_date, to),
+        ),
+      );
   }
 }

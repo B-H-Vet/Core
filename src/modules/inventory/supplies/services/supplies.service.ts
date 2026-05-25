@@ -1,9 +1,9 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import {
+  BadRequestBusinessException,
+  NotFoundBusinessException,
+} from '../../../../common/exceptions';
 import { CategoriesService } from '../../categories/services/categories.service';
 import { MeasurementUnitsService } from '../../measurement-units/services/measurement-units.service';
 import { CreateSupplyDto } from '../dto/create-supply.dto';
@@ -52,7 +52,11 @@ export class SuppliesService {
     const entity = await this.supplyRepository.findById(id);
 
     if (!entity) {
-      throw new NotFoundException('El producto no fue encontrado');
+      throw new NotFoundBusinessException(
+        'SUPPLY_NOT_FOUND',
+        'El producto no fue encontrado',
+        { supply_id: id },
+      );
     }
 
     const category = await this.categoriesService.findById(entity.id_category);
@@ -129,7 +133,11 @@ export class SuppliesService {
     await this.measurementUnitsService.findById(dto.measurementUnitId);
 
     if (!dto.expiring_date) {
-      throw new BadRequestException('La fecha de expiración es requerida');
+      throw new BadRequestBusinessException(
+        'MISSING_EXPIRING_DATE',
+        'La fecha de expiración es requerida',
+        [{ field: 'expiring_date', message: 'El campo es requerido' }],
+      );
     }
 
     const supplyData: CreateSupplyInput = {
@@ -166,15 +174,21 @@ export class SuppliesService {
     dto: UpdateSupplyDto,
   ): Promise<FindSupplyByIdResponseDto> {
     if (Object.keys(dto).length === 0) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'MISSING_UPDATE_FIELDS',
         'Debes ingresar al menos un campo para actualizar',
+        [{ field: 'body', message: 'Se requiere al menos un campo' }],
       );
     }
 
     const entity = await this.supplyRepository.findById(id);
 
     if (!entity) {
-      throw new NotFoundException('El producto no fue encontrado');
+      throw new NotFoundBusinessException(
+        'SUPPLY_NOT_FOUND',
+        'El producto no fue encontrado',
+        { supply_id: id },
+      );
     }
 
     const updateData: {
@@ -208,7 +222,8 @@ export class SuppliesService {
     const updatedEntity = await this.supplyRepository.update(updateData);
 
     if (!updatedEntity) {
-      throw new NotFoundException(
+      throw new NotFoundBusinessException(
+        'SUPPLY_UPDATE_RETRIEVAL_ERROR',
         'El producto no fue encontrado al actualizar',
       );
     }
@@ -236,7 +251,11 @@ export class SuppliesService {
     const entity = await this.supplyRepository.findById(id);
 
     if (!entity) {
-      throw new NotFoundException('El producto no fue encontrado');
+      throw new NotFoundBusinessException(
+        'SUPPLY_NOT_FOUND',
+        'El producto no fue encontrado',
+        { supply_id: id },
+      );
     }
 
     await this.supplyRepository.delete(id);

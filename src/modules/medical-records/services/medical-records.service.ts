@@ -1,10 +1,16 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
+import {
+  BadRequestBusinessException,
+  ForbiddenBusinessException,
+  NotFoundBusinessException,
+} from '../../../common/exceptions';
+import { CurrentUserPayload } from '../../../common/types/current-user.type';
+import { ISupplyRepository } from '../../inventory/supplies/repositories/supply.repository.interface';
+import {
+  IVetRepository,
+  VET_REPOSITORY,
+} from '../../vets/vet/repositories/vet.repository.interface';
 import {
   CreateMedicalRecordDto,
   CreateMedicineDetailDto,
@@ -44,6 +50,11 @@ export class MedicalRecordsService {
 
     @Inject(PET_WEIGHT_REPOSITORY)
     private readonly petWeightRepository: IPetWeightRepository,
+
+    private readonly supplyRepository: ISupplyRepository,
+
+    @Inject(VET_REPOSITORY)
+    private readonly vetRepository: IVetRepository,
   ) {}
 
   private async buildDetail(record: MedicalRecordWithPet) {
@@ -65,8 +76,11 @@ export class MedicalRecordsService {
     );
 
     if (existing) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'MEDICAL_RECORD_ALREADY_EXISTS',
         'La cita ya tiene un historial médico registrado',
+        undefined,
+        { appointment_id: dto.appointment_id },
       );
     }
 
@@ -81,10 +95,42 @@ export class MedicalRecordsService {
         : null,
     });
 
+    const clinicMedicines = dto.medicines?.filter(
+      (m: CreateMedicineDetailDto) => m.supply_id !== undefined,
+    );
+
+    for (const medicine of clinicMedicines ?? []) {
+      if (medicine.supply_id === undefined) {
+        continue;
+      }
+
+      const supply = await this.supplyRepository.findById(medicine.supply_id);
+
+      if (!supply) {
+        throw new BadRequestBusinessException(
+          'SUPPLY_NOT_FOUND',
+          `El medicamento con ID ${String(medicine.supply_id)} no existe en el inventario`,
+        );
+      }
+
+      if (supply.stock < medicine.quantity) {
+        throw new BadRequestBusinessException(
+          'INSUFFICIENT_STOCK',
+          `Stock insuficiente para ${supply.name}. Disponible: ${String(supply.stock)}, Requerido: ${String(medicine.quantity)}`,
+        );
+      }
+
+      await this.supplyRepository.update({
+        id: supply.id,
+        stock: supply.stock - medicine.quantity,
+      });
+    }
+
     await this.medicineDetailRepository.createMany(
       dto.medicines?.map((medicine: CreateMedicineDetailDto) => ({
         medical_record_id: record.id,
-        supply_id: medicine.supply_id,
+        supply_id: medicine.supply_id ?? null,
+        quantity: medicine.quantity,
         dose: medicine.dose,
         duration: medicine.duration,
       })) ?? [],
@@ -104,7 +150,8 @@ export class MedicalRecordsService {
     const created = await this.medicalRecordRepository.findById(record.id);
 
     if (!created) {
-      throw new NotFoundException(
+      throw new NotFoundBusinessException(
+        'MEDICAL_RECORD_RETRIEVAL_ERROR',
         'No se pudo consultar el historial médico creado',
       );
     }
@@ -117,42 +164,93 @@ export class MedicalRecordsService {
     return this.buildDetail(created);
   }
 
-  async findAll() {
-    const records = await this.medicalRecordRepository.findAll();
-    return Promise.all(records.map((record) => this.buildDetail(record)));
+  private async verifyVetOwnership(
+    record: MedicalRecordWithPet,
+    user: CurrentUserPayload,
+  ): Promise<void> {
+    if (user.rol === 'ADMINISTRADOR') {
+      return;
+    }
+
+    if (user.rol === 'VETERINARIO') {
+      const vet = await this.vetRepository.findByUserId(user.id);
+      if (vet?.id !== record.vet_id) {
+        throw new ForbiddenBusinessException(
+          'FORBIDDEN_RESOURCE',
+          'No tienes permisos para acceder a este historial médico',
+        );
+      }
+    }
   }
 
-  async findById(id: number) {
+  async findAll(user: CurrentUserPayload) {
+    const records = await this.medicalRecordRepository.findAll();
+
+    const filtered =
+      user.rol === 'CLIENTE'
+        ? records.filter((r) => r.client_id === user.profileId)
+        : records;
+
+    return Promise.all(filtered.map((record) => this.buildDetail(record)));
+  }
+
+  async findById(id: number, user: CurrentUserPayload) {
     const record = await this.medicalRecordRepository.findById(id);
 
     if (!record) {
-      throw new NotFoundException(
+      throw new NotFoundBusinessException(
+        'MEDICAL_RECORD_NOT_FOUND',
         'El historial médico ingresado no fue encontrado',
+        { medical_record_id: id },
       );
     }
+
+    if (user.rol === 'CLIENTE' && record.client_id !== user.profileId) {
+      throw new ForbiddenBusinessException(
+        'FORBIDDEN_RESOURCE',
+        'No tienes permisos para acceder a este historial médico',
+      );
+    }
+
+    await this.verifyVetOwnership(record, user);
 
     return this.buildDetail(record);
   }
 
-  async findByPetId(petId: number) {
+  async findByPetId(petId: number, user: CurrentUserPayload) {
     const records = await this.medicalRecordRepository.findByPetId(petId);
-    return Promise.all(records.map((record) => this.buildDetail(record)));
+
+    const filtered =
+      user.rol === 'CLIENTE'
+        ? records.filter((r) => r.client_id === user.profileId)
+        : records;
+
+    return Promise.all(filtered.map((record) => this.buildDetail(record)));
   }
 
-  async update(id: number, dto: UpdateMedicalRecordDto) {
+  async update(
+    id: number,
+    dto: UpdateMedicalRecordDto,
+    user: CurrentUserPayload,
+  ) {
     const record = await this.medicalRecordRepository.findById(id);
 
     if (!record) {
-      throw new NotFoundException(
+      throw new NotFoundBusinessException(
+        'MEDICAL_RECORD_NOT_FOUND',
         'El historial médico ingresado no fue encontrado',
+        { medical_record_id: id },
       );
     }
+
+    await this.verifyVetOwnership(record, user);
 
     const createdAt = new Date(record.created_at);
     const limit = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
 
     if (new Date() > limit) {
-      throw new BadRequestException(
+      throw new BadRequestBusinessException(
+        'MEDICAL_RECORD_EDIT_WINDOW_EXPIRED',
         'El historial médico solo puede editarse durante las primeras 24 horas',
       );
     }
@@ -179,7 +277,8 @@ export class MedicalRecordsService {
     );
 
     if (!updatedWithPet) {
-      throw new NotFoundException(
+      throw new NotFoundBusinessException(
+        'MEDICAL_RECORD_RETRIEVAL_ERROR',
         'No se pudo consultar el historial médico actualizado',
       );
     }
@@ -192,5 +291,18 @@ export class MedicalRecordsService {
     }
 
     return this.buildDetail(updatedWithPet);
+  }
+
+  async findVaccinesExpiringSoon(days: number) {
+    const today = new Date();
+    const limit = new Date();
+    limit.setDate(today.getDate() + days);
+
+    const vaccines = await this.vaccineDetailRepository.findExpiringSoon(
+      today,
+      limit,
+    );
+
+    return vaccines;
   }
 }

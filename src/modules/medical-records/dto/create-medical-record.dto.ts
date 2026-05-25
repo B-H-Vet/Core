@@ -12,9 +12,13 @@ import {
 } from 'class-validator';
 
 export class CreateMedicineDetailDto {
+  @IsOptional()
+  @IsInt()
+  supply_id?: number;
+
   @IsInt()
   @IsNotEmpty()
-  supply_id!: number;
+  quantity!: number;
 
   @IsString()
   @IsNotEmpty()

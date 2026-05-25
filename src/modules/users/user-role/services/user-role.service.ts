@@ -110,14 +110,10 @@ export class UserRoleService implements IUserRoleService {
   }
 
   async revokeRole(
-    userId: number,
-    roleId: number,
+    userRoleId: number,
     revokedBy: number,
   ): Promise<RevokeRoleResponseDto> {
-    const userRole = await this.userRoleRepository.findByUserIdAndRoleId(
-      userId,
-      roleId,
-    );
+    const userRole = await this.userRoleRepository.findById(userRoleId);
 
     if (!userRole) {
       throw new NotFoundException('La asignación de rol no fue encontrada');
@@ -136,21 +132,17 @@ export class UserRoleService implements IUserRoleService {
 
     return {
       message: 'Rol revocado exitosamente',
-      userId,
-      roleId,
+      userId: userRole.user_id,
+      roleId: userRole.role_id,
       revokedAt,
     };
   }
 
   async approveRole(
-    userId: number,
-    roleId: number,
+    userRoleId: number,
     approvedBy: number,
   ): Promise<ApproveRoleResponseDto> {
-    const userRole = await this.userRoleRepository.findByUserIdAndRoleId(
-      userId,
-      roleId,
-    );
+    const userRole = await this.userRoleRepository.findById(userRoleId);
 
     if (!userRole) {
       throw new NotFoundException('La asignación de rol no fue encontrada');
@@ -169,8 +161,8 @@ export class UserRoleService implements IUserRoleService {
 
     return {
       message: 'Rol aprobado exitosamente',
-      userId,
-      roleId,
+      userId: userRole.user_id,
+      roleId: userRole.role_id,
       approvedAt,
     };
   }

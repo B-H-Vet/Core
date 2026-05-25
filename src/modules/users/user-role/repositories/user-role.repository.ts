@@ -18,6 +18,30 @@ export class UserRoleRepository implements IUserRoleRepository {
     private readonly db: Database,
   ) {}
 
+  async findById(id: number): Promise<UserRoleWithRole | null> {
+    const result = await this.db
+      .select({
+        id: userRoles.id,
+        user_id: userRoles.user_id,
+        role_id: userRoles.role_id,
+        assigned_at: userRoles.assigned_at,
+        approved_at: userRoles.approved_at,
+        approved_by: userRoles.approved_by,
+        revoked_at: userRoles.revoked_at,
+        revoked_by: userRoles.revoked_by,
+        role: {
+          id: roles.id,
+          name: roles.name,
+          requires_approval: roles.requires_approval,
+        },
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.role_id, roles.id))
+      .where(eq(userRoles.id, id))
+      .limit(1);
+    return result[0] ?? null;
+  }
+
   async findByUserId(userId: number): Promise<UserRoleWithRole[]> {
     return await this.db
       .select({

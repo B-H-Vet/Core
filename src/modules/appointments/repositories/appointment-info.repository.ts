@@ -25,7 +25,7 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
   }
 
   async getAppointmentEmailInfo(data: {
-    userId: number;
+    clientId: number;
     petId: number;
     vetId: number;
   }): Promise<AppointmentEmailInfo | null> {
@@ -35,9 +35,9 @@ export class AppointmentInfoRepository extends IAppointmentInfoRepository {
         email: users.email,
         phone: clients.phone,
       })
-      .from(users)
-      .innerJoin(clients, eq(users.id, clients.user_id))
-      .where(eq(users.id, data.userId))
+      .from(clients)
+      .innerJoin(users, eq(clients.user_id, users.id))
+      .where(eq(clients.id, data.clientId))
       .limit(1);
 
     const petResult = await this.db

@@ -22,6 +22,8 @@ export interface UpdateMedicalRecordInput {
 
 export interface MedicalRecordWithPet extends MedicalRecord {
   pet_id: number;
+  client_id: number;
+  vet_id: number;
 }
 
 export abstract class IMedicalRecordRepository {

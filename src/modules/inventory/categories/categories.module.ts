@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { CategoriesController } from './controllers/categories.controller';
 import { CategoryRepository } from './repositories/category.repository';
-import { CATEGORY_REPOSITORY } from './repositories/category.repository.interface';
+import { ICategoryRepository } from './repositories/category.repository.interface';
 import { CategoriesService } from './services/categories.service';
 
 @Module({
@@ -10,10 +10,10 @@ import { CategoriesService } from './services/categories.service';
   providers: [
     CategoriesService,
     {
-      provide: CATEGORY_REPOSITORY,
+      provide: ICategoryRepository,
       useClass: CategoryRepository,
     },
   ],
-  exports: [CategoriesService, CATEGORY_REPOSITORY],
+  exports: [CategoriesService, ICategoryRepository],
 })
 export class CategoriesModule {}

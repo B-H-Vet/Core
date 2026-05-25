@@ -18,13 +18,24 @@ RUN pnpm build
 FROM node:22-slim AS production
 ENV NODE_ENV=production
 RUN corepack enable && corepack prepare pnpm@10 --activate
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser \
+    && mkdir -p /home/appuser/.cache \
+    && chown -R appuser:appgroup /home/appuser
+RUN mkdir -p /app && chown appuser:appgroup /app
 WORKDIR /app
 
-# 1. Copiar package files e instalar dependencias de prod (cacheable)
+# Crear directorio para migraciones generadas dinámicamente (volumen persistente)
+RUN mkdir -p /app/drizzle && chown appuser:appgroup /app/drizzle
+
+# 0. Copiar manifestos y config para que drizzle-kit funcione
 COPY --from=builder --chown=appuser:appgroup /app/package.json ./package.json
 COPY --from=builder --chown=appuser:appgroup /app/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+COPY --from=builder --chown=appuser:appgroup /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=appuser:appgroup /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder --chown=appuser:appgroup /app/src/database/schema ./src/database/schema
+
+# 1. Copiar node_modules completos (incluye devDependencies para migraciones y seeds)
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
 
 # 2. Instalar dependencias del sistema para Chromium (cacheable mientras no cambie package.json)
 RUN npx playwright install-deps chromium \
@@ -37,8 +48,12 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/app/.cache/ms-playwright
 # 4. Copiar dist al final para que solo invalide esta capa cuando cambie el código
 COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
 
+# 5. Copiar entrypoint script
+COPY --from=builder --chown=appuser:appgroup /app/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 USER appuser
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s \
   CMD node -e "require('http').get('http://localhost:3000/health', (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"
-CMD ["node", "dist/main"]
+ENTRYPOINT ["./entrypoint.sh"]

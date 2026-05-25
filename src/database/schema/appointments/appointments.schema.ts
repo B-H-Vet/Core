@@ -6,7 +6,7 @@ import {
   varchar,
 } from 'drizzle-orm/mysql-core';
 
-import { users } from '../auth/users.schema';
+import { clients } from '../clients/clients.schema';
 import { pets } from '../pets/pets.schema';
 import { vets } from '../vets/vets.schema';
 
@@ -19,9 +19,9 @@ export const appointmentStatusEnum = mysqlEnum('status', [
 export const appointments = mysqlTable('appointments', {
   id: int('id').primaryKey().autoincrement(),
 
-  user_id: int('user_id')
+  client_id: int('client_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => clients.id),
 
   vet_id: int('vet_id')
     .notNull()
