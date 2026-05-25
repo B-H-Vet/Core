@@ -88,7 +88,7 @@ export class HospitalizationsController {
   }
 
   @Patch(':id/discharge')
-  @Roles(ROL_NOMBRES.ADMINISTRADOR)
+  @Roles(ROL_NOMBRES.ADMINISTRADOR, ROL_NOMBRES.VETERINARIO)
   discharge(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: DischargeHospitalizationDto,

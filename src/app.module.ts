@@ -14,6 +14,7 @@ import { MedicalRecordsModule } from './modules/medical-records/medical-records.
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PetsModule } from './modules/pets/pets.module';
 import { UsersModule } from './modules/users/users.module';
+import { VaccinationAlertsModule } from './modules/vaccination-alerts/vaccination-alerts.module';
 
 @Module({
   imports: [
