@@ -23,6 +23,14 @@ export interface InvoiceWithDetails {
   updated_at: Date;
 }
 
+export interface InvoiceWithClientDetails extends InvoiceWithDetails {
+  client_id: number;
+  client_name: string;
+  client_email: string;
+  pet_name: string;
+  appointment_date: Date;
+}
+
 export interface InvoiceMedicineLine {
   id: number;
   supply_name: string;
@@ -64,6 +72,9 @@ export interface ServiceBasicInfo {
 export const INVOICE_QUERY_REPOSITORY = 'INVOICE_QUERY_REPOSITORY';
 
 export abstract class IInvoiceQueryRepository {
+  abstract findInvoiceWithClientDetails(
+    id: number,
+  ): Promise<InvoiceWithClientDetails | null>;
   abstract getAppointmentPaidAmount(appointmentId: number): Promise<number>;
   abstract getPrescriptionMedicines(
     appointmentId: number,

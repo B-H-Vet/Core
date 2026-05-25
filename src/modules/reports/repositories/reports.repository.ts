@@ -53,7 +53,7 @@ export class ReportsRepository extends IReportsRepository {
           between(appointments.date, data.startDate, data.endDate),
           isNull(appointments.deleted_at),
         ),
-      ) as Promise<AppointmentReportRow[]>;
+      );
   }
 
   async findBillingByPeriod(data: {
@@ -64,8 +64,8 @@ export class ReportsRepository extends IReportsRepository {
       .select({
         invoice_id: invoices.id,
         appointment_id: invoices.appointment_id,
-        subtotal: invoices.subtotal,
-        total: invoices.total,
+        subtotal: invoices.subtotal_unpaid,
+        total: invoices.total_amount,
         status: invoices.status,
         created_at: invoices.created_at,
       })

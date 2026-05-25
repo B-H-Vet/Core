@@ -13,8 +13,8 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PetsModule } from './modules/pets/pets.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { UsersModule } from './modules/users/users.module';
-import { VaccinationAlertsModule } from './modules/vaccination-alerts/vaccination-alerts.module';
 
 @Module({
   imports: [
@@ -32,6 +32,7 @@ import { VaccinationAlertsModule } from './modules/vaccination-alerts/vaccinatio
     PetsModule,
     RedisModule,
     UsersModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -7,6 +7,7 @@ import {
   ForbiddenBusinessException,
   NotFoundBusinessException,
 } from '../../../common/exceptions';
+import { PdfService } from '../../../common/pdf/pdf.service';
 import { CurrentUserPayload } from '../../../common/types/current-user.type';
 import { AddAdditionalServiceResponseDto } from '../dto/add-additional-service-response.dto';
 import { AddAdditionalServiceDto } from '../dto/add-additional-service.dto';
@@ -38,6 +39,7 @@ import {
   INVOICE_REPOSITORY,
   IInvoiceRepository,
 } from '../repositories/invoice.repository.interface';
+import { buildInvoicePdfTemplate } from '../templates/invoice-pdf.template';
 
 import { InvoiceCalculationService } from './invoice-calculation.service';
 
@@ -65,6 +67,8 @@ export class InvoicesService {
     private readonly invoiceQueryRepository: IInvoiceQueryRepository,
 
     private readonly invoiceCalculationService: InvoiceCalculationService,
+
+    private readonly pdfService: PdfService,
   ) {}
 
   private generateInvoiceNumber(): string {
@@ -462,6 +466,59 @@ export class InvoicesService {
       created_at: invoice.created_at,
       updated_at: invoice.updated_at,
     };
+  }
+
+  async downloadInvoicePdf(
+    id: number,
+    user: CurrentUserPayload,
+  ): Promise<Buffer> {
+    const invoice =
+      await this.invoiceQueryRepository.findInvoiceWithClientDetails(id);
+    if (!invoice) {
+      throw new NotFoundBusinessException(
+        'INVOICE_NOT_FOUND',
+        'La factura ingresada no fue encontrada',
+        { invoice_id: id },
+      );
+    }
+
+    if (invoice.status === 'ANULADA') {
+      throw new ForbiddenBusinessException(
+        'INVOICE_CANCELLED',
+        'No se puede descargar una factura anulada',
+      );
+    }
+
+    if (user.rol === 'CLIENTE') {
+      if (!user.profileId) {
+        throw new ForbiddenBusinessException(
+          'CLIENT_PROFILE_MISSING',
+          'No tienes un perfil de cliente asociado',
+        );
+      }
+      if (invoice.client_id !== user.profileId) {
+        throw new ForbiddenBusinessException(
+          'FORBIDDEN_RESOURCE',
+          'No tienes permisos para descargar esta factura',
+        );
+      }
+    }
+
+    const [medicinesData, additionalServicesData, inventoryItemsData] =
+      await Promise.all([
+        this.invoiceQueryRepository.findInvoiceMedicineLines(id),
+        this.invoiceQueryRepository.findInvoiceServiceLines(id),
+        this.invoiceQueryRepository.findInvoiceInventoryLines(id),
+      ]);
+
+    const html = buildInvoicePdfTemplate(
+      invoice,
+      medicinesData,
+      additionalServicesData,
+      inventoryItemsData,
+    );
+
+    return this.pdfService.renderFromHtml(html);
   }
 
   async findAll(

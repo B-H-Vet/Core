@@ -1,9 +1,7 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
   Get,
-  Inject,
   Param,
   ParseIntPipe,
   Patch,
@@ -13,7 +11,6 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUserPayload } from '../../../common/types/current-user.type';
-import { ROL_NOMBRES } from '../../../database/schema/auth/roles.schema';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -24,12 +21,7 @@ import { MedicalRecordsService } from '../services/medical-records.service';
 @Controller('medical-records')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MedicalRecordsController {
-  constructor(
-    private readonly medicalRecordsService: MedicalRecordsService,
-
-    @Inject(PET_REPOSITORY)
-    private readonly petRepository: IPetRepository,
-  ) {}
+  constructor(private readonly medicalRecordsService: MedicalRecordsService) {}
 
   @Post()
   @Roles('ADMINISTRADOR')

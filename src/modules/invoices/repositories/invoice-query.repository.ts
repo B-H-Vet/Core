@@ -7,6 +7,8 @@ import {
 } from '../../../database/database.module';
 import { appointmentServices } from '../../../database/schema/appointments/appointment-services.schema';
 import { appointments } from '../../../database/schema/appointments/appointments.schema';
+import { users } from '../../../database/schema/auth/users.schema';
+import { clients } from '../../../database/schema/clients/clients.schema';
 import { supplies } from '../../../database/schema/inventory/supplies.schema';
 import { invoiceAdditionalServices } from '../../../database/schema/invoices/invoice-additional-services.schema';
 import { invoiceInventoryItems } from '../../../database/schema/invoices/invoice-inventory-items.schema';
@@ -14,6 +16,7 @@ import { invoiceMedicineDetails } from '../../../database/schema/invoices/invoic
 import { invoices } from '../../../database/schema/invoices/invoices.schema';
 import { medicalRecords } from '../../../database/schema/medical-records/medical-records.schema';
 import { medicineDetails } from '../../../database/schema/medical-records/medicine-details.schema';
+import { pets } from '../../../database/schema/pets/pets.schema';
 import { services } from '../../../database/schema/services/services.schema';
 
 import {
@@ -21,6 +24,7 @@ import {
   type InvoiceInventoryLine,
   type InvoiceMedicineLine,
   type InvoiceServiceLine,
+  type InvoiceWithClientDetails,
   type InvoiceWithDetails,
   IInvoiceQueryRepository,
   type PrescriptionMedicine,
@@ -307,6 +311,53 @@ export class InvoiceQueryRepository extends IInvoiceQueryRepository {
         remaining_amount: Number(i.remaining_amount),
       })),
       total: countResult[0]?.value ?? 0,
+    };
+  }
+
+  async findInvoiceWithClientDetails(
+    id: number,
+  ): Promise<InvoiceWithClientDetails | null> {
+    const result = await this.db
+      .select({
+        id: invoices.id,
+        appointment_id: invoices.appointment_id,
+        invoice_number: invoices.invoice_number,
+        status: invoices.status,
+        paid_amount: invoices.paid_amount,
+        subtotal_unpaid: invoices.subtotal_unpaid,
+        discount_total: invoices.discount_total,
+        total_amount: invoices.total_amount,
+        remaining_amount: invoices.remaining_amount,
+        paid_at: invoices.paid_at,
+        cancellation_reason: invoices.cancellation_reason,
+        cancelled_at: invoices.cancelled_at,
+        created_at: invoices.created_at,
+        updated_at: invoices.updated_at,
+        client_id: clients.id,
+        client_name: users.name,
+        client_email: users.email,
+        pet_name: pets.name,
+        appointment_date: appointments.date,
+      })
+      .from(invoices)
+      .innerJoin(appointments, eq(invoices.appointment_id, appointments.id))
+      .innerJoin(clients, eq(appointments.client_id, clients.id))
+      .innerJoin(users, eq(clients.user_id, users.id))
+      .innerJoin(pets, eq(appointments.pet_id, pets.id))
+      .where(and(eq(invoices.id, id), isNull(invoices.deleted_at)))
+      .limit(1);
+
+    if (!result[0]) return null;
+
+    const row = result[0];
+
+    return {
+      ...row,
+      paid_amount: Number(row.paid_amount),
+      subtotal_unpaid: Number(row.subtotal_unpaid),
+      discount_total: Number(row.discount_total),
+      total_amount: Number(row.total_amount),
+      remaining_amount: Number(row.remaining_amount),
     };
   }
 }
