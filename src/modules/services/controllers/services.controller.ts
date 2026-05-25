@@ -65,8 +65,11 @@ export class ServicesController {
 
   @Post()
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
-  create(@Body() dto: CreateServiceDto): Promise<CreateServiceResponseDto> {
-    return this.servicesService.create(dto);
+  create(
+    @Body() dto: CreateServiceDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<CreateServiceResponseDto> {
+    return this.servicesService.create(dto, user.id, user.rol);
   }
 
   @Patch(':id')
@@ -74,15 +77,17 @@ export class ServicesController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateServiceDto,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<UpdateServiceResponseDto> {
-    return this.servicesService.update(id, dto);
+    return this.servicesService.update(id, dto, user.id, user.rol);
   }
 
   @Delete(':id')
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
   delete(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<DeleteServiceResponseDto> {
-    return this.servicesService.delete(id);
+    return this.servicesService.delete(id, user.id, user.rol);
   }
 }
