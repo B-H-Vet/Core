@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuditModule } from './common/audit/audit.module';
 import { RedisModule } from './common/redis/redis.module';
 import { DatabaseModule } from './database/database.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
@@ -19,6 +20,7 @@ import { VaccinationAlertsModule } from './modules/vaccination-alerts/vaccinatio
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    AuditModule,
     DatabaseModule,
     AuthModule,
     UsersModule,

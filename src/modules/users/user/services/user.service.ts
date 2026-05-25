@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
+import { AuditService } from '../../../../common/audit/audit.service';
 import { ROL_NOMBRES } from '../../../../database/schema/auth/roles.schema';
 import type {
   User,
@@ -39,6 +40,8 @@ export class UserService implements IUserService {
 
     @Inject(USER_ROLE_REPOSITORY)
     private readonly userRoleRepository: IUserRoleRepository,
+
+    private readonly auditService: AuditService,
   ) {}
 
   async findAll(pagination?: PaginationParams): Promise<UserListResponseDto> {
@@ -196,6 +199,17 @@ export class UserService implements IUserService {
     };
     await this.userRepository.update(updatedUserPayload);
 
+    const admin = await this.userRepository.findById(adminId);
+    const adminRoles = await this.userRoleRepository.findByUserId(adminId);
+    const adminRolActivo = adminRoles.find((ur) => !ur.revoked_at);
+
+    this.auditService.logAccountApproved({
+      approverName: admin?.name ?? '',
+      approverId: String(adminId),
+      approvedUserId: String(id),
+      approverRole: adminRolActivo?.role.name ?? ROL_NOMBRES.ADMINISTRADOR,
+    });
+
     return {
       message: 'La cuenta ha sido aprobada correctamente',
       userId: id,
@@ -210,6 +224,17 @@ export class UserService implements IUserService {
     await this.findByIdEntity(id);
     const deactivatedAt = new Date();
     await this.userRoleRepository.revokeByUserId(id, adminId);
+
+    const admin = await this.userRepository.findById(adminId);
+    const adminRoles = await this.userRoleRepository.findByUserId(adminId);
+    const adminRolActivo = adminRoles.find((ur) => !ur.revoked_at);
+
+    this.auditService.logUserSuspended({
+      suspenderName: admin?.name ?? '',
+      suspenderRole: adminRolActivo?.role.name ?? ROL_NOMBRES.ADMINISTRADOR,
+      suspenderId: String(adminId),
+      suspendedUserId: String(id),
+    });
 
     return {
       message: 'La cuenta ha sido desactivada correctamente',
