@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import {
   Inject,
   Injectable,
@@ -46,7 +48,7 @@ export class UserService implements IUserService {
     const limit = pagination?.limit ?? 10;
 
     const users = await this.userRepository.findAll();
-    const userRolesMap = new Map<number, UserRoleWithRole[]>();
+    const userRolesMap = new Map<string, UserRoleWithRole[]>();
 
     for (const u of users) {
       const userRoles = await this.userRoleRepository.findByUserId(u.id);
@@ -70,7 +72,7 @@ export class UserService implements IUserService {
     };
   }
 
-  async findById(id: number): Promise<UserDetailResponseDto> {
+  async findById(id: string): Promise<UserDetailResponseDto> {
     const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException('El usuario no fue encontrado');
@@ -99,7 +101,7 @@ export class UserService implements IUserService {
     };
   }
 
-  async findByIdEntity(id: number): Promise<User> {
+  async findByIdEntity(id: string): Promise<User> {
     const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException('El usuario no fue encontrado');
@@ -149,8 +151,8 @@ export class UserService implements IUserService {
   }
 
   async aprobarCuenta(
-    id: number,
-    adminId: number,
+    id: string,
+    adminId: string,
   ): Promise<ApproveUserResponseDto> {
     const user = await this.findByIdEntity(id);
 
@@ -193,8 +195,8 @@ export class UserService implements IUserService {
   }
 
   async desactivarCuenta(
-    id: number,
-    adminId: number,
+    id: string,
+    adminId: string,
   ): Promise<DeactivateUserResponseDto> {
     await this.findByIdEntity(id);
     const deactivatedAt = new Date();
@@ -216,6 +218,7 @@ export class UserService implements IUserService {
     }
 
     const newUserPayload: NewUser = {
+      id: randomUUID(),
       name: createUserDto.name,
       email: createUserDto.email,
       password_hash: createUserDto.password,
@@ -230,7 +233,7 @@ export class UserService implements IUserService {
   }
 
   async update(
-    id: number,
+    id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto> {
     const user = await this.findByIdEntity(id);
@@ -263,7 +266,7 @@ export class UserService implements IUserService {
     return UserMapper.toDto(updatedUser);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.findByIdEntity(id);
     await this.userRepository.delete(id);
   }

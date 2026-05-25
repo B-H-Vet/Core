@@ -64,7 +64,7 @@ export class ClientsService {
     };
   }
 
-  async findByUserId(userId: number): Promise<FindClientByUserIdResponseDto> {
+  async findByUserId(userId: string): Promise<FindClientByUserIdResponseDto> {
     const client = await this.clientRepository.findByUserId(userId);
 
     if (!client) {
@@ -85,7 +85,7 @@ export class ClientsService {
   }
 
   async create(
-    userId: number,
+    userId: string,
     phone: string,
     address?: string,
   ): Promise<CreateClientResponseDto> {

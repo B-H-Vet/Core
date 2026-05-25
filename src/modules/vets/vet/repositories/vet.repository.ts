@@ -140,7 +140,7 @@ export class VetRepository extends IVetRepository {
     };
   }
 
-  async findByUserId(userId: number): Promise<Vet | null> {
+  async findByUserId(userId: string): Promise<Vet | null> {
     const result = await this.db
       .select()
       .from(vets)

@@ -23,7 +23,7 @@ export class AdminController {
   aprobarCuenta(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser()
-    user: { id: number; email: string; rol: string },
+    user: { id: string; email: string; rol: string },
   ) {
     return this.userRoleService.approveRole(id, user.id);
   }
@@ -32,7 +32,7 @@ export class AdminController {
   revocarCuenta(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser()
-    user: { id: number; email: string; rol: string },
+    user: { id: string; email: string; rol: string },
   ) {
     return this.userRoleService.revokeRole(id, user.id);
   }

@@ -1,6 +1,6 @@
 export class RevokeRoleResponseDto {
   message!: string;
-  userId!: number;
+  userId!: string;
   roleId!: number;
   revokedAt!: Date;
 }

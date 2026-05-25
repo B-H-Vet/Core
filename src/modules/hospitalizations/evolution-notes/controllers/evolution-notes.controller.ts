@@ -17,7 +17,7 @@ import { CreateEvolutionNoteDto } from '../dto/create-evolution-note.dto';
 import { EvolutionNotesService } from '../services/evolution-notes.service';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   rol: string;
 }
 

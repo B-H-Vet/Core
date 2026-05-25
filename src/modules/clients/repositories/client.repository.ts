@@ -58,7 +58,7 @@ export class ClientRepository implements IClientRepository {
     return result[0] ?? null;
   }
 
-  async findByUserId(userId: number): Promise<ClientWithUser | null> {
+  async findByUserId(userId: string): Promise<ClientWithUser | null> {
     const result = await this.db
       .select({
         id: clients.id,
@@ -80,7 +80,7 @@ export class ClientRepository implements IClientRepository {
   }
 
   async create(client: {
-    user: { id: number };
+    user: { id: string };
     phone: string;
     address?: string;
   }): Promise<ClientWithUser> {

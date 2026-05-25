@@ -28,7 +28,7 @@ export class UserRoleService implements IUserRoleService {
   ) {}
 
   async findByUserId(
-    userId: number,
+    userId: string,
     pagination?: PaginationParams,
   ): Promise<UserRoleListResponseDto> {
     const page = pagination?.page ?? 1;
@@ -111,7 +111,7 @@ export class UserRoleService implements IUserRoleService {
 
   async revokeRole(
     userRoleId: number,
-    revokedBy: number,
+    revokedBy: string,
   ): Promise<RevokeRoleResponseDto> {
     const userRole = await this.userRoleRepository.findById(userRoleId);
 
@@ -140,7 +140,7 @@ export class UserRoleService implements IUserRoleService {
 
   async approveRole(
     userRoleId: number,
-    approvedBy: number,
+    approvedBy: string,
   ): Promise<ApproveRoleResponseDto> {
     const userRole = await this.userRoleRepository.findById(userRoleId);
 

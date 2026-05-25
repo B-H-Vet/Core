@@ -12,6 +12,7 @@ import { VetsModule } from '../vets/vets.module';
 import { AuthController } from './controllers/auth.controller';
 import { RegisterController } from './controllers/register.controller';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AuditService } from './services/audit.service';
 import { AuthMailService } from './services/auth-mail.service';
 import { AuthRedisService } from './services/auth-redis.service';
 import { AuthService } from './services/auth.service';
@@ -40,6 +41,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     AuthService,
     AuthMailService,
     AuthRedisService,
+    AuditService,
     JwtStrategy,
     JwtAuthGuard,
   ],

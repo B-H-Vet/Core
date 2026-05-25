@@ -55,7 +55,9 @@ export const invoices = mysqlTable('invoices', {
 
   cancellation_reason: varchar('cancellation_reason', { length: 500 }),
 
-  cancelled_by_user_id: int('cancelled_by_user_id').references(() => users.id),
+  cancelled_by_user_id: varchar('cancelled_by_user_id', {
+    length: 36,
+  }).references(() => users.id),
   cancelled_at: datetime('cancelled_at'),
 
   created_at: datetime('created_at').notNull().default(new Date()),

@@ -27,7 +27,7 @@ export interface UpdateInvoiceInput {
   payment_link_expires_at?: Date | null;
   paid_at?: Date | null;
   cancellation_reason?: string | null;
-  cancelled_by_user_id?: number | null;
+  cancelled_by_user_id?: string | null;
   cancelled_at?: Date | null;
 }
 

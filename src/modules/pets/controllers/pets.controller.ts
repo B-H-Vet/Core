@@ -23,7 +23,7 @@ import { UpdatePetDto } from '../dto/update-pet.dto';
 import { PetsService } from '../services/pets.service';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   email: string;
   rol: string;
   profileId: number | null;

@@ -6,7 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { RequestWithCookies } from '../../../common/types/express.types';
 
 export interface JwtPayload {
-  sub: number;
+  sub: string;
   email: string;
   rol: string;
   profileId: number | null;

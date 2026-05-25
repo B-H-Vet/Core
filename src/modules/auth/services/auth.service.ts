@@ -1,4 +1,4 @@
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -65,6 +65,7 @@ import { ResendVerificationResponseDto } from '../dto/responses/resend-verificat
 import { VerifyEmailResponseDto } from '../dto/responses/verify-email-response.dto';
 import { VerifyCodeRequestDto } from '../dto/verify-code-request.dto';
 
+import { AuditService } from './audit.service';
 import { AuthMailService } from './auth-mail.service';
 import { AuthRedisService } from './auth-redis.service';
 
@@ -74,6 +75,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly authMailService: AuthMailService,
     private readonly authRedisService: AuthRedisService,
+    private readonly auditService: AuditService,
 
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
@@ -97,8 +99,8 @@ export class AuthService {
     private readonly db: Database,
   ) {}
 
-  private setVerificationCookie(res: Response, userId: number) {
-    const encrypted = Buffer.from(String(userId)).toString('base64');
+  private setVerificationCookie(res: Response, userId: string) {
+    const encrypted = Buffer.from(userId).toString('base64');
     res.cookie('verification_session', encrypted, {
       httpOnly: true,
       sameSite: 'strict',
@@ -154,8 +156,10 @@ export class AuthService {
     const code = randomInt(100000, 999999).toString();
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const newUserId = randomUUID();
 
     const user = await this.userRepository.create({
+      id: newUserId,
       name: fullName,
       email,
       password_hash: passwordHash,
@@ -178,6 +182,13 @@ export class AuthService {
     await this.authRedisService.saveVerificationCode(user.id, code);
 
     await this.userRoleRepository.create({ user, role });
+
+    await this.auditService.userRegistered({
+      newUserId: user.id,
+      newUserName: fullName,
+      assignedRole: roleName,
+      email,
+    });
 
     await this.authMailService.sendVerificationCode(email, fullName, code);
 
@@ -253,7 +264,10 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.db.transaction(async (tx) => {
+      const newUserId = randomUUID();
+
       await tx.insert(users).values({
+        id: newUserId,
         name: dto.fullName,
         email: dto.email,
         password_hash: passwordHash,
@@ -273,12 +287,12 @@ export class AuthService {
       }
 
       await tx.insert(userRoles).values({
-        user_id: newUser.id,
+        user_id: newUserId,
         role_id: role.id,
       });
 
       await tx.insert(vets).values({
-        user_id: newUser.id,
+        user_id: newUserId,
         license_number: dto.licenseNumber,
       });
 
@@ -286,7 +300,7 @@ export class AuthService {
         const [newVet] = await tx
           .select()
           .from(vets)
-          .where(eq(vets.user_id, newUser.id))
+          .where(eq(vets.user_id, newUserId))
           .limit(1);
 
         if (newVet) {
@@ -365,9 +379,8 @@ export class AuthService {
       );
     }
 
-    const decoded = Buffer.from(verificationSession, 'base64').toString();
+    const userId = Buffer.from(verificationSession, 'base64').toString();
 
-    const userId = parseInt(decoded, 10);
     const user = await this.userRepository.findById(userId);
 
     if (!user) {
@@ -404,6 +417,14 @@ export class AuthService {
     const activeRole = userRolesList.find((ur) => !ur.revoked_at);
 
     const shouldAutoLogin = activeRole?.role.requires_approval === false;
+
+    if (activeRole) {
+      await this.auditService.emailVerified({
+        userId: user.id,
+        userRole: activeRole.role.name,
+        emailSnapshot: user.email,
+      });
+    }
 
     res.clearCookie('verification_session');
 
@@ -457,7 +478,7 @@ export class AuthService {
   }
 
   private async getProfileId(
-    userId: number,
+    userId: string,
     rol: string,
   ): Promise<number | null> {
     if (rol === ROL_NOMBRES.CLIENTE) {
@@ -475,6 +496,7 @@ export class AuthService {
     dto: LoginRequestDto,
     expectedRole: RolNombre,
     res: Response,
+    req: RequestWithCookies,
   ): Promise<{
     user: LoginUserSummaryDto;
     role: string;
@@ -572,6 +594,15 @@ export class AuthService {
       }
     }
 
+    await this.auditService.loginSuccess({
+      userId: user.id,
+      loggedUserName: user.name,
+      emailSnapshot: user.email,
+      ip: req.ip ?? 'unknown',
+      userAgent: req.headers['user-agent'],
+      loggedUserRole: activeRole.role.name,
+    });
+
     return {
       user: userSummary,
       role: activeRole.role.name,
@@ -582,8 +613,9 @@ export class AuthService {
   async loginClient(
     dto: LoginRequestDto,
     res: Response,
+    req: RequestWithCookies,
   ): Promise<LoginClientResponseDto> {
-    const result = await this.loginCore(dto, ROL_NOMBRES.CLIENTE, res);
+    const result = await this.loginCore(dto, ROL_NOMBRES.CLIENTE, res, req);
     return {
       message: 'Login successful',
       user: result.user,
@@ -599,8 +631,9 @@ export class AuthService {
   async loginVet(
     dto: LoginRequestDto,
     res: Response,
+    req: RequestWithCookies,
   ): Promise<LoginVetResponseDto> {
-    const result = await this.loginCore(dto, ROL_NOMBRES.VETERINARIO, res);
+    const result = await this.loginCore(dto, ROL_NOMBRES.VETERINARIO, res, req);
     return {
       message: 'Login successful',
       user: result.user,
@@ -612,8 +645,14 @@ export class AuthService {
   async loginReceptionist(
     dto: LoginRequestDto,
     res: Response,
+    req: RequestWithCookies,
   ): Promise<LoginReceptionistResponseDto> {
-    const result = await this.loginCore(dto, ROL_NOMBRES.RECEPCIONISTA, res);
+    const result = await this.loginCore(
+      dto,
+      ROL_NOMBRES.RECEPCIONISTA,
+      res,
+      req,
+    );
     return {
       message: 'Login successful',
       user: result.user,
@@ -625,8 +664,14 @@ export class AuthService {
   async loginAdmin(
     dto: LoginRequestDto,
     res: Response,
+    req: RequestWithCookies,
   ): Promise<LoginAdminResponseDto> {
-    const result = await this.loginCore(dto, ROL_NOMBRES.ADMINISTRADOR, res);
+    const result = await this.loginCore(
+      dto,
+      ROL_NOMBRES.ADMINISTRADOR,
+      res,
+      req,
+    );
     return {
       message: 'Login successful',
       user: result.user,
@@ -656,7 +701,7 @@ export class AuthService {
     }
 
     let payload: {
-      sub: number;
+      sub: string;
       email: string;
       rol: string;
       profileId: number | null;
@@ -738,7 +783,7 @@ export class AuthService {
 
     if (accessToken) {
       try {
-        const payload = this.jwtService.verify<{ sub: number }>(accessToken);
+        const payload = this.jwtService.verify<{ sub: string }>(accessToken);
         if (refreshTokenId) {
           await this.authRedisService.revokeRefreshToken(
             payload.sub,

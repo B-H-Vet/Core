@@ -17,7 +17,7 @@ export class UserMapper {
 
   static toDtoList(
     users: User[],
-    userRolesMap: Map<number, UserRoleWithRole[]>,
+    userRolesMap: Map<string, UserRoleWithRole[]>,
   ): UserResponseDto[] {
     return users.map((u) => this.toDto(u, userRolesMap.get(u.id)));
   }

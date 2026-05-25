@@ -70,7 +70,7 @@ export class VetService {
   }
 
   async create(
-    userId: number,
+    userId: string,
     dto: { license_number: string; specialtyIds?: number[] },
   ): Promise<CreateVetResponseDto> {
     const user = await this.userRepository.findById(userId);

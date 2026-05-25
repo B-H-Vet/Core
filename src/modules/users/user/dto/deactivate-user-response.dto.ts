@@ -1,5 +1,5 @@
 export class DeactivateUserResponseDto {
   message!: string;
-  userId!: number;
+  userId!: string;
   deactivatedAt!: Date;
 }

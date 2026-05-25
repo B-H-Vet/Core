@@ -26,7 +26,7 @@ import { FindHospitalizationsByPetIdResponseDto } from '../dto/find-hospitalizat
 import { HospitalizationsService } from '../services/hospitalizations.service';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   rol: string;
 }
 

@@ -1,4 +1,4 @@
 export class UserSummaryResponseDto {
-  id!: number;
+  id!: string;
   email!: string;
 }

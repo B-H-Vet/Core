@@ -4,7 +4,7 @@ export class UpdateVetResponseDto {
   is_active!: boolean;
   created_at!: Date;
   user!: {
-    id: number;
+    id: string;
     email: string;
   };
   specialties!: {

@@ -13,7 +13,7 @@ export interface VetWithRelations {
   is_active: boolean;
   created_at: Date;
   user: {
-    id: number;
+    id: string;
     email: string;
   };
   specialties: {
@@ -24,7 +24,7 @@ export interface VetWithRelations {
 
 export interface CreateVetInput {
   user: {
-    id: number;
+    id: string;
   };
   license_number: string;
 }
@@ -42,7 +42,7 @@ export abstract class IVetRepository {
 
   abstract findById(id: number): Promise<VetWithRelations | null>;
 
-  abstract findByUserId(userId: number): Promise<Vet | null>;
+  abstract findByUserId(userId: string): Promise<Vet | null>;
 
   abstract create(vet: CreateVetInput): Promise<VetWithRelations>;
 

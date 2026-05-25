@@ -42,7 +42,7 @@ export class UserRoleRepository implements IUserRoleRepository {
     return result[0] ?? null;
   }
 
-  async findByUserId(userId: number): Promise<UserRoleWithRole[]> {
+  async findByUserId(userId: string): Promise<UserRoleWithRole[]> {
     return await this.db
       .select({
         id: userRoles.id,
@@ -65,7 +65,7 @@ export class UserRoleRepository implements IUserRoleRepository {
   }
 
   async findByUserIdAndRoleId(
-    userId: number,
+    userId: string,
     roleId: number,
   ): Promise<UserRoleWithRole | null> {
     const result = await this.db
@@ -92,7 +92,7 @@ export class UserRoleRepository implements IUserRoleRepository {
   }
 
   async create(userRole: {
-    user: { id: number };
+    user: { id: string };
     role: { id: number };
   }): Promise<UserRole | null> {
     await this.db.insert(userRoles).values({
@@ -127,7 +127,7 @@ export class UserRoleRepository implements IUserRoleRepository {
     return result[0] ?? null;
   }
 
-  async revokeByUserId(userId: number, revokedBy: number): Promise<void> {
+  async revokeByUserId(userId: string, revokedBy: string): Promise<void> {
     await this.db
       .update(userRoles)
       .set({
