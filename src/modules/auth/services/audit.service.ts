@@ -1,22 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { create } from 'axios';
-import type { AxiosInstance } from 'axios';
+import axios from 'axios';
 
 @Injectable()
 export class AuditService {
-  private readonly client: AxiosInstance;
+  private readonly client = axios;
   private readonly logger = new Logger(AuditService.name);
 
   constructor(private readonly configService: ConfigService) {
     const baseURL =
       this.configService.get<string>('AUDIT_SERVICE_URL') ??
       'http://localhost:8080';
-    this.client = create({
-      baseURL,
-      timeout: 5000,
-      headers: { 'Content-Type': 'application/json' },
-    });
+
+    this.client.defaults.baseURL = baseURL;
+    this.client.defaults.timeout = 5000;
+    this.client.defaults.headers.common['Content-Type'] = 'application/json';
   }
 
   async userRegistered(data: {

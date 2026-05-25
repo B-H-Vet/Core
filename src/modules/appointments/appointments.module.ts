@@ -16,6 +16,7 @@ import { AppointmentServiceRepository } from './repositories/appointment-service
 import { APPOINTMENT_SERVICE_REPOSITORY } from './repositories/appointment-service.repository.interface';
 import { AppointmentRepository } from './repositories/appointment.repository';
 import { APPOINTMENT_REPOSITORY } from './repositories/appointment.repository.interface';
+import { AppointmentAuditService } from './services/appointment-audit.service';
 import { AppointmentRedisService } from './services/appointment-redis.service';
 import { AppointmentsService } from './services/appointments.service';
 
@@ -32,6 +33,7 @@ import { AppointmentsService } from './services/appointments.service';
   providers: [
     AppointmentsService,
     AppointmentRedisService,
+    AppointmentAuditService,
     {
       provide: APPOINTMENT_REPOSITORY,
       useClass: AppointmentRepository,

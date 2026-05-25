@@ -51,6 +51,7 @@ import {
   PaginationParams,
 } from '../repositories/appointment.repository.interface';
 
+import { AppointmentAuditService } from './appointment-audit.service';
 import {
   AppointmentRedisService,
   PendingAppointmentData,
@@ -84,6 +85,8 @@ export class AppointmentsService {
     private readonly appointmentRedisService: AppointmentRedisService,
 
     private readonly medicalRecordsService: MedicalRecordsService,
+
+    private readonly appointmentAuditService: AppointmentAuditService,
   ) {}
 
   private async getAppointmentTotal(appointmentId: number): Promise<number> {
@@ -428,6 +431,12 @@ export class AppointmentsService {
 
     await this.appointmentRedisService.deletePendingAppointment(token);
 
+    await this.appointmentAuditService.appointmentPayment({
+      appointmentId: String(appointment.id),
+      appointmentPayerId: String(appointment.client_id),
+      appointmentPayerRole: 'CLIENTE',
+    });
+
     const emailInfo =
       await this.appointmentInfoRepository.getAppointmentEmailInfo({
         clientId: appointment.client_id,
@@ -449,6 +458,13 @@ export class AppointmentsService {
     }
 
     const total = await this.getAppointmentTotal(appointment.id);
+
+    await this.appointmentAuditService.appointmentCreated({
+      appointmentId: String(appointment.id),
+      scheduledAt: appointment.date.toISOString(),
+      appointmentCreatorId: '',
+      appointmentCreatorRole: '',
+    });
 
     return {
       id: appointment.id,
@@ -683,6 +699,12 @@ export class AppointmentsService {
       status: 'ATENDIDA',
     });
 
+    await this.appointmentAuditService.appointmentAttended({
+      appointmentId: String(updated.id),
+      appointmentAttenderId: user.id,
+      appointmentAttenderRole: user.rol,
+    });
+
     return this.findById(updated.id, user);
   }
 
@@ -722,6 +744,12 @@ export class AppointmentsService {
       status: 'CANCELADA',
       cancel_reason: dto.reason,
       canceled_at: new Date(),
+    });
+
+    await this.appointmentAuditService.appointmentCancelled({
+      appointmentId: String(updated.id),
+      appointmentCancellerId: user.id,
+      appointmentCancellerRole: user.rol,
     });
 
     const cancelEmailInfo =
