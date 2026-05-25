@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 
 import { SuppliesModule } from '../inventory/supplies/supplies.module';
@@ -12,13 +13,14 @@ import { PetWeightRepository } from './repositories/pet-weight.repository';
 import { PET_WEIGHT_REPOSITORY } from './repositories/pet-weight.repository.interface';
 import { VaccineDetailRepository } from './repositories/vaccine-detail.repository';
 import { VACCINE_DETAIL_REPOSITORY } from './repositories/vaccine-detail.repository.interface';
+import { AuditClient } from './services/audit.client';
 import { MedicalRecordsService } from './services/medical-records.service';
-
 @Module({
-  imports: [SuppliesModule, VetsRepositoriesModule],
+  imports: [SuppliesModule, VetsRepositoriesModule, HttpModule],
   controllers: [MedicalRecordsController],
   providers: [
     MedicalRecordsService,
+    AuditClient,
     {
       provide: MEDICAL_RECORD_REPOSITORY,
       useClass: MedicalRecordRepository,

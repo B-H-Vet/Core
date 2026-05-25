@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Request } from 'express';
 
 import {
   BadRequestBusinessException,
@@ -36,6 +37,8 @@ import {
   VACCINE_DETAIL_REPOSITORY,
 } from '../repositories/vaccine-detail.repository.interface';
 
+import { AuditClient } from './audit.client';
+
 @Injectable()
 export class MedicalRecordsService {
   constructor(
@@ -55,6 +58,8 @@ export class MedicalRecordsService {
 
     @Inject(VET_REPOSITORY)
     private readonly vetRepository: IVetRepository,
+
+    private readonly auditClient: AuditClient,
   ) {}
 
   private async buildDetail(record: MedicalRecordWithPet) {
@@ -70,7 +75,11 @@ export class MedicalRecordsService {
     };
   }
 
-  async create(dto: CreateMedicalRecordDto) {
+  async create(
+    dto: CreateMedicalRecordDto,
+    user: CurrentUserPayload,
+    req: Request,
+  ) {
     const existing = await this.medicalRecordRepository.findByAppointmentId(
       dto.appointment_id,
     );
@@ -161,7 +170,23 @@ export class MedicalRecordsService {
       String(dto.weight_at_visit),
     );
 
-    return this.buildDetail(created);
+    const result = await this.buildDetail(created);
+
+    this.auditClient
+      .medicalRecordCreated({
+        occurredAt: new Date().toISOString(),
+        medicalRecordId: String(created.id),
+        medicalRecordCreatorId: user.id,
+        medicalRecordCreatorRole: user.rol,
+        medicalRecordCreatorName: user.email,
+        ip: req.ip ?? '',
+        userAgent: req.headers['user-agent'] ?? '',
+      })
+      .catch((err: unknown) => {
+        console.error('Audit error (create):', err);
+      });
+
+    return result;
   }
 
   private async verifyVetOwnership(
@@ -232,6 +257,7 @@ export class MedicalRecordsService {
     id: number,
     dto: UpdateMedicalRecordDto,
     user: CurrentUserPayload,
+    req: Request,
   ) {
     const record = await this.medicalRecordRepository.findById(id);
 
@@ -290,7 +316,23 @@ export class MedicalRecordsService {
       );
     }
 
-    return this.buildDetail(updatedWithPet);
+    const result = await this.buildDetail(updatedWithPet);
+
+    this.auditClient
+      .medicalRecordEdited({
+        occurredAt: new Date().toISOString(),
+        medicalRecordId: String(id),
+        medicalRecordEditorId: user.id,
+        medicalRecordEditorRole: user.rol,
+        medicalRecordEditorName: user.email,
+        ip: req.ip ?? '',
+        userAgent: req.headers['user-agent'] ?? '',
+      })
+      .catch((err: unknown) => {
+        console.error('Audit error (update):', err);
+      });
+
+    return result;
   }
 
   async findVaccinesExpiringSoon(days: number) {
