@@ -36,7 +36,7 @@ import {
 } from '../repositories/hospitalization.repository.interface';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   rol: string;
 }
 
@@ -118,7 +118,7 @@ export class HospitalizationsService {
 
   async findAll(
     role: string,
-    userId: number,
+    userId: string,
   ): Promise<FindAllHospitalizationsResponseDto> {
     let hospitalizations: Hospitalization[];
 
@@ -146,7 +146,7 @@ export class HospitalizationsService {
   async findById(
     id: number,
     role: string,
-    userId: number,
+    userId: string,
   ): Promise<FindHospitalizationByIdResponseDto> {
     const hospitalization =
       await this.hospitalizationRepository.findByIdWithPet(id);
@@ -185,7 +185,7 @@ export class HospitalizationsService {
   async findByPetId(
     petId: number,
     role: string,
-    userId: number,
+    userId: string,
   ): Promise<FindHospitalizationsByPetIdResponseDto> {
     if (role === ROL_NOMBRES.CLIENTE) {
       const pet = await this.petRepository.findById(petId);

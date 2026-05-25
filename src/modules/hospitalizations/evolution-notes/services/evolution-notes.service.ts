@@ -21,7 +21,7 @@ import {
 } from '../repositories/evolution-note.repository.interface';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   rol: string;
 }
 

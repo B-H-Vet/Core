@@ -13,7 +13,7 @@ export interface PaginationParams {
 
 export abstract class IUserRoleService {
   abstract findByUserId(
-    userId: number,
+    userId: string,
     pagination?: PaginationParams,
   ): Promise<UserRoleListResponseDto>;
   abstract assignRole(
@@ -21,10 +21,10 @@ export abstract class IUserRoleService {
   ): Promise<AssignRoleResponseDto>;
   abstract revokeRole(
     userRoleId: number,
-    revokedBy: number,
+    revokedBy: string,
   ): Promise<RevokeRoleResponseDto>;
   abstract approveRole(
     userRoleId: number,
-    approvedBy: number,
+    approvedBy: string,
   ): Promise<ApproveRoleResponseDto>;
 }

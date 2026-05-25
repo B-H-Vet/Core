@@ -25,7 +25,7 @@ import { UpdateServiceDto } from '../dto/update-service.dto';
 import { ServicesService } from '../services/services.service';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   email: string;
   rol: string;
   profileId: number | null;

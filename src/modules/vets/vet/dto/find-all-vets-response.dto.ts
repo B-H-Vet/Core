@@ -1,5 +1,5 @@
 export class VetUserResponseDto {
-  id!: number;
+  id!: string;
   email!: string;
 }
 

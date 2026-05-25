@@ -3,7 +3,7 @@ import {
   Get,
   Param,
   Patch,
-  ParseIntPipe,
+  ParseUUIDPipe,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,7 +15,7 @@ import { RolesGuard } from '../../../auth/guards/roles.guard';
 import { UserService } from '../services/user.service';
 
 interface AuthenticatedUser {
-  id: number;
+  id: string;
   email: string;
   rol: string;
   profileId: number | null;
@@ -40,14 +40,14 @@ export class UsersController {
 
   @Get(':id')
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
-  findById(@Param('id', ParseIntPipe) id: number) {
+  findById(@Param('id', ParseUUIDPipe) id: string) {
     return this.userService.findById(id);
   }
 
   @Patch(':id/aprobar')
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
   aprobarCuenta(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.userService.aprobarCuenta(id, user.id);
@@ -56,7 +56,7 @@ export class UsersController {
   @Patch(':id/desactivar')
   @Roles(ROL_NOMBRES.ADMINISTRADOR)
   desactivarCuenta(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.userService.desactivarCuenta(id, user.id);

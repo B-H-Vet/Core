@@ -24,7 +24,7 @@ export class UserRepository extends IUserRepository {
     return await this.db.select().from(users).where(isNull(users.deleted_at));
   }
 
-  async findById(id: number): Promise<User | null> {
+  async findById(id: string): Promise<User | null> {
     const result = await this.db
       .select()
       .from(users)
@@ -52,7 +52,7 @@ export class UserRepository extends IUserRepository {
     return this.findById(user.id);
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.db
       .update(users)
       .set({ deleted_at: new Date() })

@@ -41,7 +41,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{
     message: string;
-    user: { id: number; name: string; email: string };
+    user: { id: string; name: string; email: string };
     role: string;
   }> {
     return this.authService.refreshTokens(req, res);
@@ -59,31 +59,35 @@ export class AuthController {
   async loginClient(
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: RequestWithCookies,
   ): Promise<LoginClientResponseDto> {
-    return this.authService.loginClient(dto, res);
+    return this.authService.loginClient(dto, res, req);
   }
 
   @Post('login/vet')
   async loginVet(
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: RequestWithCookies,
   ): Promise<LoginVetResponseDto> {
-    return this.authService.loginVet(dto, res);
+    return this.authService.loginVet(dto, res, req);
   }
 
   @Post('login/receptionist')
   async loginReceptionist(
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: RequestWithCookies,
   ): Promise<LoginReceptionistResponseDto> {
-    return this.authService.loginReceptionist(dto, res);
+    return this.authService.loginReceptionist(dto, res, req);
   }
 
   @Post('login/admin')
   async loginAdmin(
     @Body() dto: LoginRequestDto,
     @Res({ passthrough: true }) res: Response,
+    @Req() req: RequestWithCookies,
   ): Promise<LoginAdminResponseDto> {
-    return this.authService.loginAdmin(dto, res);
+    return this.authService.loginAdmin(dto, res, req);
   }
 }

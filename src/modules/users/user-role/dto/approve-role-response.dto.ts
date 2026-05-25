@@ -1,6 +1,6 @@
 export class ApproveRoleResponseDto {
   message!: string;
-  userId!: number;
+  userId!: string;
   roleId!: number;
   approvedAt!: Date;
 }

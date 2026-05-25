@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
@@ -55,8 +57,10 @@ async function seedAdmin() {
   }
 
   const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const newUserId = randomUUID();
 
   await db.insert(users).values({
+    id: newUserId,
     name: adminName,
     email: adminEmail,
     password_hash: passwordHash,
@@ -65,20 +69,8 @@ async function seedAdmin() {
     updated_at: new Date(),
   });
 
-  const [newUser] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, adminEmail))
-    .limit(1);
-
-  if (!newUser) {
-    console.error('Failed to create admin user');
-    await connection.end();
-    process.exit(1);
-  }
-
   await db.insert(userRoles).values({
-    user_id: newUser.id,
+    user_id: newUserId,
     role_id: adminRole.id,
     approved_at: new Date(),
     assigned_at: new Date(),

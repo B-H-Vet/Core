@@ -10,7 +10,7 @@ import { users } from '../auth/users.schema';
 
 export const vets = mysqlTable('vets', {
   id: int('id').primaryKey().autoincrement(),
-  user_id: int('user_id')
+  user_id: varchar('user_id', { length: 36 })
     .notNull()
     .references(() => users.id),
   license_number: varchar('license_number', { length: 100 }).notNull().unique(),

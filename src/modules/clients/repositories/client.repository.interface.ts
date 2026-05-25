@@ -8,7 +8,7 @@ export interface ClientWithUser {
   created_at: Date;
 
   user: {
-    id: number;
+    id: string;
     email: string;
   };
 }
@@ -16,10 +16,10 @@ export interface ClientWithUser {
 export abstract class IClientRepository {
   abstract findAll(): Promise<ClientWithUser[]>;
   abstract findById(id: number): Promise<ClientWithUser | null>;
-  abstract findByUserId(userId: number): Promise<ClientWithUser | null>;
+  abstract findByUserId(userId: string): Promise<ClientWithUser | null>;
 
   abstract create(client: {
-    user: { id: number };
+    user: { id: string };
     phone: string;
     address?: string;
   }): Promise<ClientWithUser>;

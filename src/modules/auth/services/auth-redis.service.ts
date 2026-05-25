@@ -8,52 +8,52 @@ import { RedisService } from '../../../common/redis/services/redis.service';
 export class AuthRedisService {
   constructor(private readonly redisService: RedisService) {}
 
-  async saveVerificationCode(userId: number, code: string): Promise<void> {
+  async saveVerificationCode(userId: string, code: string): Promise<void> {
     const client = this.redisService.getClient();
-    await client.set(`verification:${String(userId)}`, code, 'EX', 60 * 10);
+    await client.set(`verification:${userId}`, code, 'EX', 60 * 10);
   }
 
-  async getVerificationCode(userId: number): Promise<string | null> {
+  async getVerificationCode(userId: string): Promise<string | null> {
     const client = this.redisService.getClient();
-    return await client.get(`verification:${String(userId)}`);
+    return await client.get(`verification:${userId}`);
   }
 
-  async deleteVerificationCode(userId: number): Promise<void> {
+  async deleteVerificationCode(userId: string): Promise<void> {
     const client = this.redisService.getClient();
-    await client.del(`verification:${String(userId)}`);
+    await client.del(`verification:${userId}`);
   }
 
   // --- Refresh Token (opaque, rotación) ---
 
   async createRefreshToken(
-    userId: number,
+    userId: string,
     ttlSeconds = 7 * 24 * 60 * 60,
   ): Promise<string> {
     const tokenId = randomUUID();
-    const key = `refresh:${String(userId)}:${tokenId}`;
+    const key = `refresh:${userId}:${tokenId}`;
     const client = this.redisService.getClient();
     await client.set(key, '1', 'EX', ttlSeconds);
     return tokenId;
   }
 
   async validateRefreshToken(
-    userId: number,
+    userId: string,
     tokenId: string,
   ): Promise<boolean> {
-    const key = `refresh:${String(userId)}:${tokenId}`;
+    const key = `refresh:${userId}:${tokenId}`;
     const client = this.redisService.getClient();
     const value = await client.get(key);
     return value === '1';
   }
 
-  async revokeRefreshToken(userId: number, tokenId: string): Promise<void> {
-    const key = `refresh:${String(userId)}:${tokenId}`;
+  async revokeRefreshToken(userId: string, tokenId: string): Promise<void> {
+    const key = `refresh:${userId}:${tokenId}`;
     const client = this.redisService.getClient();
     await client.del(key);
   }
 
-  async revokeAllUserRefreshTokens(userId: number): Promise<void> {
-    const pattern = `refresh:${String(userId)}:*`;
+  async revokeAllUserRefreshTokens(userId: string): Promise<void> {
+    const pattern = `refresh:${userId}:*`;
     const client = this.redisService.getClient();
     const stream = client.scanStream({ match: pattern, count: 100 });
 

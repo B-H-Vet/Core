@@ -17,23 +17,23 @@ export interface PaginationParams {
 
 export abstract class IUserService {
   abstract findAll(pagination?: PaginationParams): Promise<UserListResponseDto>;
-  abstract findById(id: number): Promise<UserDetailResponseDto>;
-  abstract findByIdEntity(id: number): Promise<User>;
+  abstract findById(id: string): Promise<UserDetailResponseDto>;
+  abstract findByIdEntity(id: string): Promise<User>;
   abstract findPendientesAprobacion(
     pagination?: PaginationParams,
   ): Promise<PendingUsersResponseDto>;
   abstract aprobarCuenta(
-    id: number,
-    adminId: number,
+    id: string,
+    adminId: string,
   ): Promise<ApproveUserResponseDto>;
   abstract desactivarCuenta(
-    id: number,
-    adminId: number,
+    id: string,
+    adminId: string,
   ): Promise<DeactivateUserResponseDto>;
   abstract create(createUserDto: CreateUserDto): Promise<UserResponseDto>;
   abstract update(
-    id: number,
+    id: string,
     updateUserDto: UpdateUserDto,
   ): Promise<UserResponseDto>;
-  abstract delete(id: number): Promise<void>;
+  abstract delete(id: string): Promise<void>;
 }

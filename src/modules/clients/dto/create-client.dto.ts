@@ -1,8 +1,8 @@
-import { IsString, IsOptional, IsNumber, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsUUID, MinLength } from 'class-validator';
 
 export class CreateClientDto {
-  @IsNumber()
-  userId!: number;
+  @IsUUID()
+  userId!: string;
 
   @IsString({ message: 'El teléfono ingresado debe ser texto' })
   @MinLength(7, { message: 'El teléfono debe tener al menos 7 caracteres' })

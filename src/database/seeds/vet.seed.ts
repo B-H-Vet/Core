@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/mysql2';
@@ -74,8 +76,10 @@ async function seedVet() {
   }
 
   const passwordHash = await bcrypt.hash(config.password, 10);
+  const newUserId = randomUUID();
 
   await db.insert(users).values({
+    id: newUserId,
     name: config.name,
     email: config.email,
     password_hash: passwordHash,
@@ -84,27 +88,15 @@ async function seedVet() {
     updated_at: new Date(),
   });
 
-  const [newUser] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, config.email))
-    .limit(1);
-
-  if (!newUser) {
-    console.error('Failed to create vet user');
-    await connection.end();
-    process.exit(1);
-  }
-
   await db.insert(userRoles).values({
-    user_id: newUser.id,
+    user_id: newUserId,
     role_id: vetRole.id,
     approved_at: new Date(),
     assigned_at: new Date(),
   });
 
   await db.insert(vets).values({
-    user_id: newUser.id,
+    user_id: newUserId,
     license_number: config.licenseNumber,
     created_at: new Date(),
     updated_at: new Date(),
@@ -113,7 +105,7 @@ async function seedVet() {
   const [newVet] = await db
     .select()
     .from(vets)
-    .where(eq(vets.user_id, newUser.id))
+    .where(eq(vets.user_id, newUserId))
     .limit(1);
 
   if (!newVet) {

@@ -1,5 +1,5 @@
 export class ApproveUserResponseDto {
   message!: string;
-  userId!: number;
+  userId!: string;
   approvedAt!: Date;
 }
