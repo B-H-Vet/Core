@@ -1,6 +1,7 @@
 import { randomInt, randomUUID } from 'crypto';
 
 import { Inject, Injectable } from '@nestjs/common';
+import { Request } from 'express';
 
 import {
   BadRequestBusinessException,
@@ -650,6 +651,7 @@ export class AppointmentsService {
     id: number,
     user: CurrentUserPayload,
     dto: CompleteAppointmentDto,
+    req: Request,
   ): Promise<AppointmentDetailResponseDto> {
     const appointment = await this.appointmentRepository.findById(id);
 
@@ -690,7 +692,7 @@ export class AppointmentsService {
       ...(dto.vaccines !== undefined && { vaccines: dto.vaccines }),
     };
 
-    await this.medicalRecordsService.create(medicalRecordDto);
+    await this.medicalRecordsService.create(medicalRecordDto, user, req);
 
     const updated = await this.appointmentRepository.updateStatus({
       id,

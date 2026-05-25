@@ -18,11 +18,14 @@ import {
   SERVICE_REPOSITORY,
 } from '../repositories/service.repository.interface';
 
+import { ServicesAuditService } from './services-audit.service';
+
 @Injectable()
 export class ServicesService {
   constructor(
     @Inject(SERVICE_REPOSITORY)
     private readonly serviceRepository: IServiceRepository,
+    private readonly auditService: ServicesAuditService,
   ) {}
 
   private toDto(service: Service): GetAllServiceResponseDto {
@@ -66,19 +69,33 @@ export class ServicesService {
     return this.toDto(service);
   }
 
-  async create(dto: CreateServiceDto): Promise<CreateServiceResponseDto> {
+  async create(
+    dto: CreateServiceDto,
+    userId: string,
+    userRole: string,
+  ): Promise<CreateServiceResponseDto> {
     const service = await this.serviceRepository.create({
       name: dto.name,
       description: dto.description ?? null,
       price: String(dto.price),
       is_active: true,
     });
+
+    await this.auditService.serviceCreated({
+      serviceId: String(service.id),
+      price: parseFloat(service.price),
+      serviceCreatorId: userId,
+      serviceCreatorRole: userRole,
+    });
+
     return this.toDto(service);
   }
 
   async update(
     id: number,
     dto: UpdateServiceDto,
+    userId: string,
+    userRole: string,
   ): Promise<UpdateServiceResponseDto> {
     if (Object.keys(dto).length === 0) {
       throw new BadRequestException(
@@ -96,15 +113,33 @@ export class ServicesService {
       price: dto.price !== undefined ? String(dto.price) : service.price,
       is_active: dto.is_active ?? service.is_active,
     });
+
+    await this.auditService.serviceEdited({
+      serviceId: String(updated.id),
+      serviceEditorId: userId,
+      serviceEditorRole: userRole,
+    });
+
     return this.toDto(updated);
   }
 
-  async delete(id: number): Promise<DeleteServiceResponseDto> {
+  async delete(
+    id: number,
+    userId: string,
+    userRole: string,
+  ): Promise<DeleteServiceResponseDto> {
     const service = await this.serviceRepository.findById(id);
     if (!service) {
       throw new NotFoundException('El servicio ingresado no fue encontrado');
     }
     await this.serviceRepository.delete(id);
+
+    await this.auditService.serviceDeactivated({
+      serviceId: String(id),
+      serviceDeactivatorId: userId,
+      serviceDeactivatorRole: userRole,
+    });
+
     return this.toDeleteDto({ ...service, deleted_at: new Date() });
   }
 }

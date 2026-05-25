@@ -7,8 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 
 import { CurrentUserPayload } from '../../../common/types/current-user.type';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -18,6 +20,7 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { CreateMedicalRecordDto } from '../dto/create-medical-record.dto';
 import { UpdateMedicalRecordDto } from '../dto/update-medical-record.dto';
 import { MedicalRecordsService } from '../services/medical-records.service';
+
 @Controller('medical-records')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class MedicalRecordsController {
@@ -25,8 +28,12 @@ export class MedicalRecordsController {
 
   @Post()
   @Roles('ADMINISTRADOR')
-  create(@Body() dto: CreateMedicalRecordDto) {
-    return this.medicalRecordsService.create(dto);
+  create(
+    @Body() dto: CreateMedicalRecordDto,
+    @CurrentUser() user: CurrentUserPayload,
+    @Req() req: Request,
+  ) {
+    return this.medicalRecordsService.create(dto, user, req);
   }
 
   @Get()
@@ -59,8 +66,9 @@ export class MedicalRecordsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateMedicalRecordDto,
     @CurrentUser() user: CurrentUserPayload,
+    @Req() req: Request,
   ) {
-    return this.medicalRecordsService.update(id, dto, user);
+    return this.medicalRecordsService.update(id, dto, user, req);
   }
 
   @Get('vaccines/expiring-soon')
